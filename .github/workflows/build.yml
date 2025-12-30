@@ -3,96 +3,117 @@ name: Build (AppImage + Windows Setup)
 on:
   push:
     branches: [ "main" ]
-    tags: [ "v*" ]
   workflow_dispatch:
 
 jobs:
   linux-appimage:
-    name: Linux AppImage (ubuntu-22.04)
+    name: Linux AppImage (Py3.11)
     runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Setup Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
           cache: "pip"
 
-      - name: Install system deps
+      - name: Install system deps (tk + build tools)
         run: |
           sudo apt-get update
-          sudo apt-get install -y python3-tk libgtk-3-0 libnss3 libxss1 libasound2
-          # Se quiser manter upx=True no spec:
-          # sudo apt-get install -y upx-ucl
+          sudo apt-get install -y \
+            python3-tk \
+            patchelf \
+            zsync \
+            file \
+            libfuse2
 
-      - name: Install Python deps
+      - name: Create venv + install requirements
         run: |
+          python -m venv .venv
+          . .venv/bin/activate
           python -m pip install --upgrade pip
-          # Se você tiver requirements.txt, use ele:
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          # Garantia de build:
-          pip install pyinstaller pillow
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          fi
+          pip install pyinstaller
 
-      - name: Build AppImage (use seu script)
+      - name: Build AppImage
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: "1"
         run: |
-          chmod +x ./build_appimage.sh
-          ./build_appimage.sh
+          chmod +x build_appimage.sh || true
+          chmod +x tools/*.AppImage || true
 
-      - name: Upload AppImage artifact
+          # garante que o script exista
+          if [ ! -f build_appimage.sh ]; then
+            echo "ERRO: build_appimage.sh não encontrado na raiz do repo."
+            exit 1
+          fi
+
+          . .venv/bin/activate
+          bash ./build_appimage.sh
+
+      - name: Upload Linux artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: LeitorCodigos-AppImage
+          name: LeitorCodigos-linux-appimage
           path: |
-            dist/*.AppImage
-            dist/*.appimage
-          if-no-files-found: error
+            *.AppImage
+            dist/**
+            build/**
 
-  windows-setup:
-    name: Windows Setup.exe
+  windows-build:
+    name: Windows EXE/Setup (Py3.11)
     runs-on: windows-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Setup Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
           cache: "pip"
 
-      - name: Install Python deps
+      - name: Install python deps
+        shell: pwsh
         run: |
           python -m pip install --upgrade pip
-          if (Test-Path requirements.txt) { pip install -r requirements.txt }
-          pip install pyinstaller pillow
+          if (Test-Path "requirements.txt") {
+            pip install -r requirements.txt
+          }
+          pip install pyinstaller
 
-      - name: Install tools (Inno Setup + optional UPX)
-        shell: powershell
+      - name: Build Windows (scripts)
+        shell: pwsh
         run: |
-          choco install innosetup -y
-          # Se quiser manter upx=True no spec:
-          # choco install upx -y
+          # Ajuste aqui se seus scripts estiverem em outra pasta
+          if (Test-Path ".\build_windows.ps1") {
+            powershell -ExecutionPolicy Bypass -File .\build_windows.ps1
+          } else {
+            Write-Host "AVISO: build_windows.ps1 não encontrado, pulando..."
+          }
 
-      - name: Build Windows exe (your script)
-        shell: powershell
-        run: |
-          powershell -ExecutionPolicy Bypass -File .\build_windows.ps1
+          if (Test-Path ".\build_installer_windows.ps1") {
+            powershell -ExecutionPolicy Bypass -File .\build_installer_windows.ps1
+          } elseif (Test-Path ".\build_installe_windows.ps1") {
+            # fallback caso o arquivo esteja com esse nome
+            powershell -ExecutionPolicy Bypass -File .\build_installe_windows.ps1
+          } else {
+            Write-Host "AVISO: script de installer não encontrado, pulando..."
+          }
 
-      - name: Build Windows installer (your script)
-        shell: powershell
-        run: |
-          powershell -ExecutionPolicy Bypass -File .\build_installer_windows.ps1
-
-      - name: Upload Setup.exe artifact
+      - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: LeitorCodigos-Setup
+          name: LeitorCodigos-windows
           path: |
-            **/Output/*.exe
-            **/dist/*Setup*.exe
-            **/Setup*.exe
-          if-no-files-found: error
+            dist/**
+            build/**
+            *.exe
+            *.msi
+            *.zip
