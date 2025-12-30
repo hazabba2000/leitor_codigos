@@ -1,26 +1,17 @@
 
-# PyInstaller
-build/
+# build outputs
+AppDir/
 dist/
-*.spec.bak
-*.log
-
-# Build artifacts / installers
-Output/
+build/
 *.AppImage
 *.exe
 *.msi
+*.zip
 
-# Python
+# python cache
 __pycache__/
 *.pyc
-*.pyo
-*.pyd
-*.so
+
+# venv
 .venv/
 venv/
-
-# OS / Editor
-.DS_Store
-Thumbs.db
-.vscode/
