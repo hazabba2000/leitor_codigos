@@ -1,0 +1,98 @@
+name: Build (AppImage + Windows Setup)
+
+on:
+  push:
+    branches: [ "main" ]
+    tags: [ "v*" ]
+  workflow_dispatch:
+
+jobs:
+  linux-appimage:
+    name: Linux AppImage (ubuntu-22.04)
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install system deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-tk libgtk-3-0 libnss3 libxss1 libasound2
+          # Se quiser manter upx=True no spec:
+          # sudo apt-get install -y upx-ucl
+
+      - name: Install Python deps
+        run: |
+          python -m pip install --upgrade pip
+          # Se você tiver requirements.txt, use ele:
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          # Garantia de build:
+          pip install pyinstaller pillow
+
+      - name: Build AppImage (use seu script)
+        run: |
+          chmod +x ./build_appimage.sh
+          ./build_appimage.sh
+
+      - name: Upload AppImage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: LeitorCodigos-AppImage
+          path: |
+            dist/*.AppImage
+            dist/*.appimage
+          if-no-files-found: error
+
+  windows-setup:
+    name: Windows Setup.exe
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Python deps
+        run: |
+          python -m pip install --upgrade pip
+          if (Test-Path requirements.txt) { pip install -r requirements.txt }
+          pip install pyinstaller pillow
+
+      - name: Install tools (Inno Setup + optional UPX)
+        shell: powershell
+        run: |
+          choco install innosetup -y
+          # Se quiser manter upx=True no spec:
+          # choco install upx -y
+
+      - name: Build Windows exe (your script)
+        shell: powershell
+        run: |
+          powershell -ExecutionPolicy Bypass -File .\build_windows.ps1
+
+      - name: Build Windows installer (your script)
+        shell: powershell
+        run: |
+          powershell -ExecutionPolicy Bypass -File .\build_installer_windows.ps1
+
+      - name: Upload Setup.exe artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: LeitorCodigos-Setup
+          path: |
+            **/Output/*.exe
+            **/dist/*Setup*.exe
+            **/Setup*.exe
+          if-no-files-found: error
