@@ -1,19 +1,44 @@
-.\build_windows.ps1
-& $ISCC ".\installer\installer.iss"
+# ===============================
+# Build Installer (Inno Setup) -> dist_installer
+# ===============================
+$ErrorActionPreference = "Stop"
 
-# 1) Build PyInstaller (gera dist\RegistroEquipamentos\...)
-.\build_windows.ps1
+Write-Host ">>> Build Installer (Inno Setup) -> dist_installer" -ForegroundColor Cyan
 
-# 2) Compilar Inno Setup (precisa Inno instalado)
-$ISCC = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
-if (!(Test-Path $ISCC)) {
-  $ISCC = "${env:ProgramFiles}\Inno Setup 6\ISCC.exe"
+$IssPath = Join-Path $PSScriptRoot "installer\RegistroEquipamentos.iss"
+
+# Confere se o build do PyInstaller existe
+$PyDist = Join-Path $PSScriptRoot "dist\RegistroEquipamentos"
+if (!(Test-Path $PyDist)) {
+  throw "Pasta do PyInstaller não encontrada: $PyDist. Rode o build_windows.ps1 antes."
 }
 
-if (!(Test-Path $ISCC)) {
-  Write-Host "ERRO: Inno Setup não encontrado. Instale o Inno Setup 6." -ForegroundColor Red
-  exit 1
+# Garante pasta de saída (não atrapalha o Inno)
+$OutDir = Join-Path $PSScriptRoot "dist_installer"
+New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
+
+# Instala Inno Setup (ISCC) via Chocolatey se não existir
+if (-not (Get-Command "ISCC.exe" -ErrorAction SilentlyContinue)) {
+  Write-Host "ISCC.exe não encontrado. Instalando Inno Setup via Chocolatey..." -ForegroundColor Yellow
+
+  if (-not (Get-Command "choco.exe" -ErrorAction SilentlyContinue)) {
+    Write-Host "Chocolatey não encontrado. Instalando Chocolatey..." -ForegroundColor Yellow
+    Set-ExecutionPolicy Bypass -Scope Process -Force
+    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+    Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+  }
+
+  choco install innosetup -y --no-progress
 }
 
-& $ISCC ".\installer\installer.iss"
-Write-Host "OK -> installer_output\ (Setup.exe gerado)" -ForegroundColor Green
+if (!(Test-Path $IssPath)) {
+  throw ".iss não encontrado em: $IssPath"
+}
+
+Write-Host "Compilando: $IssPath" -ForegroundColor Yellow
+& ISCC.exe $IssPath
+
+Write-Host ">>> OK! Conteúdo de dist_installer:" -ForegroundColor Green
+Get-ChildItem $OutDir -Force | Format-Table Name, Length, LastWriteTime
+
+
