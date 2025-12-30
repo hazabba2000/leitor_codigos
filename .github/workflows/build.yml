@@ -2,7 +2,7 @@ name: Build (AppImage + Windows Setup)
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   workflow_dispatch:
 
 jobs:
@@ -44,10 +44,10 @@ jobs:
         env:
           APPIMAGE_EXTRACT_AND_RUN: "1"
         run: |
+          set -e
           chmod +x build_appimage.sh || true
           chmod +x tools/*.AppImage || true
 
-          # garante que o script exista
           if [ ! -f build_appimage.sh ]; then
             echo "ERRO: build_appimage.sh não encontrado na raiz do repo."
             exit 1
@@ -70,8 +70,11 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout (Windows-safe)
         uses: actions/checkout@v4
+        with:
+          # evita falha por paths "inválidos no Windows" (ex: trailing space)
+          path: false
 
       - name: Setup Python 3.11
         uses: actions/setup-python@v5
@@ -82,29 +85,74 @@ jobs:
       - name: Install python deps
         shell: pwsh
         run: |
+          $ErrorActionPreference = "Stop"
           python -m pip install --upgrade pip
           if (Test-Path "requirements.txt") {
             pip install -r requirements.txt
           }
           pip install pyinstaller
 
-      - name: Build Windows (scripts)
+      - name: Build Windows (scripts + fallback)
         shell: pwsh
         run: |
-          # Ajuste aqui se seus scripts estiverem em outra pasta
+          $ErrorActionPreference = "Stop"
+
+          # 1) Executa scripts se existirem
           if (Test-Path ".\build_windows.ps1") {
+            Write-Host "Rodando build_windows.ps1..."
             powershell -ExecutionPolicy Bypass -File .\build_windows.ps1
           } else {
-            Write-Host "AVISO: build_windows.ps1 não encontrado, pulando..."
+            Write-Host "AVISO: build_windows.ps1 não encontrado."
           }
 
           if (Test-Path ".\build_installer_windows.ps1") {
+            Write-Host "Rodando build_installer_windows.ps1..."
             powershell -ExecutionPolicy Bypass -File .\build_installer_windows.ps1
           } elseif (Test-Path ".\build_installe_windows.ps1") {
-            # fallback caso o arquivo esteja com esse nome
+            Write-Host "Rodando build_installe_windows.ps1 (fallback nome)..."
             powershell -ExecutionPolicy Bypass -File .\build_installe_windows.ps1
           } else {
-            Write-Host "AVISO: script de installer não encontrado, pulando..."
+            Write-Host "AVISO: script de installer não encontrado."
+          }
+
+          # 2) Se nada foi gerado, faz fallback build com PyInstaller .spec
+          $hasDist = Test-Path ".\dist"
+          $hasInstaller = Test-Path ".\dist_installer"
+          $hasAnyExe = @(Get-ChildItem -Path . -Recurse -Filter *.exe -ErrorAction SilentlyContinue).Count -gt 0
+          $hasAnyMsi = @(Get-ChildItem -Path . -Recurse -Filter *.msi -ErrorAction SilentlyContinue).Count -gt 0
+
+          if (-not $hasDist -and -not $hasInstaller -and -not $hasAnyExe -and -not $hasAnyMsi) {
+            if (Test-Path ".\LeitorCodigos.spec") {
+              Write-Host "Nenhuma saída detectada. Rodando fallback: PyInstaller LeitorCodigos.spec"
+              python -m PyInstaller --noconfirm LeitorCodigos.spec
+            } else {
+              throw "Nenhuma saída gerada e LeitorCodigos.spec não encontrado."
+            }
+          }
+
+      - name: Debug outputs
+        shell: pwsh
+        run: |
+          Write-Host "=== LIST dist ==="
+          if (Test-Path ".\dist") { Get-ChildItem .\dist -Recurse | Select-Object FullName }
+          Write-Host "=== LIST build ==="
+          if (Test-Path ".\build") { Get-ChildItem .\build -Recurse | Select-Object FullName }
+          Write-Host "=== LIST dist_installer ==="
+          if (Test-Path ".\dist_installer") { Get-ChildItem .\dist_installer -Recurse | Select-Object FullName }
+
+      - name: Package Windows artifacts (zip)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          if (Test-Path ".\dist") {
+            Compress-Archive -Path .\dist\* -DestinationPath LeitorCodigos-windows.zip -Force
+          } elseif (Test-Path ".\dist_installer") {
+            Compress-Archive -Path .\dist_installer\* -DestinationPath LeitorCodigos-windows.zip -Force
+          } elseif (Test-Path ".\build") {
+            Compress-Archive -Path .\build\* -DestinationPath LeitorCodigos-windows.zip -Force
+          } else {
+            throw "Não encontrei dist/, dist_installer/ nem build/ para empacotar."
           }
 
       - name: Upload Windows artifacts
@@ -114,6 +162,9 @@ jobs:
           path: |
             dist/**
             build/**
+            dist_installer/**
             *.exe
             *.msi
             *.zip
+
+
