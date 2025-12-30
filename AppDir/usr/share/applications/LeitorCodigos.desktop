@@ -1,8 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=Registro de Equipamentos
-Comment=Leitor de Código de Barras - Registro de Equipamentos
-Exec=LeitorCodigos
-Icon=leitorcodigos
-Categories=Utility;
-Terminal=false
