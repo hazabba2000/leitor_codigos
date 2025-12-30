@@ -1,0 +1,26 @@
+
+# PyInstaller
+build/
+dist/
+*.spec.bak
+*.log
+
+# Build artifacts / installers
+Output/
+*.AppImage
+*.exe
+*.msi
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.so
+.venv/
+venv/
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
