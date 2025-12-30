@@ -3,8 +3,7 @@ from PyInstaller.utils.hooks import collect_all
 
 datas = [
     ('assets', 'assets'),
-    ('equipamentos.db', '.'),
-]
+    ]
 
 binaries = []
 hiddenimports = ['PIL._tkinter_finder', 'PIL.ImageTk']
