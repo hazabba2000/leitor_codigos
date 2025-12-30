@@ -1,0 +1,1683 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+    <meta charset="UTF-8" />
+    <title>Registro de Equipamentos (Web)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- Fonte -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+
+    <!-- CSS global (se existir) -->
+    <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
+
+    <style>
+        :root {
+            --bg: #020617;
+            --bg-elevated: #020617;
+            --bg-card: rgba(15, 23, 42, 0.98);
+            --bg-soft: #0b1120;
+            --border-subtle: rgba(148, 163, 184, 0.35);
+            --accent: #2563eb;
+            --accent-soft: #1d4ed8;
+            --accent-muted: rgba(37, 99, 235, 0.24);
+            --danger: #b91c1c;
+            --danger-soft: rgba(248, 113, 113, 0.15);
+            --text: #f9fafb;
+            --text-soft: #e5e7eb;
+            --muted: #9ca3af;
+            --muted-soft: #6b7280;
+
+            --radius-lg: 18px;
+            --radius-md: 12px;
+            --radius-pill: 999px;
+
+            --shadow-soft: 0 18px 45px rgba(15, 23, 42, 0.8);
+            --header-height: 64px; /* altura da barra superior */        }
+
+        /* Tema claro */
+        html[data-theme="light"] {
+            --bg: #f3f4f6;
+            --bg-elevated: #ffffff;
+            --bg-card: #ffffff;
+            --bg-soft: #f9fafb;
+            --border-subtle: rgba(148, 163, 184, 0.35);
+            --accent: #2563eb;
+            --accent-soft: #1d4ed8;
+            --accent-muted: rgba(37, 99, 235, 0.12);
+            --danger: #b91c1c;
+            --danger-soft: rgba(248, 113, 113, 0.12);
+            --text: #111827;
+            --text-soft: #111827;
+            --muted: #4b5563;
+            --muted-soft: #6b7280;
+
+            --shadow-soft: 0 18px 40px rgba(15, 23, 42, 0.12);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            background:
+                radial-gradient(circle at top, #1e293b 0, var(--bg-soft) 40%, var(--bg) 75%);
+            min-height: 100vh;
+            color: var(--text);
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        /* ===========================
+           LAYOUT GERAL + TOPBAR
+           =========================== */
+
+        .page {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 40;
+            backdrop-filter: blur(16px);
+            background: linear-gradient(
+                to bottom,
+                rgba(15, 23, 42, 0.95),
+                rgba(15, 23, 42, 0.80),
+                transparent
+            );
+            border-bottom: 1px solid rgba(148, 163, 184, 0.22);
+        }
+
+        .topbar-inner {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 10px 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+        }
+
+        .brand-badge {
+            width: 30px;
+            height: 30px;
+            border-radius: 999px;
+            background: radial-gradient(circle at 30% 20%, #38bdf8, #6366f1 50%, #020617 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            color: #e5e7eb;
+            box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.9);
+        }
+
+        .topbar-nav {
+            display: flex;
+            gap: 6px;
+            margin-left: 18px;
+            flex-wrap: wrap;
+        }
+
+        .topbar-link {
+            border-radius: 999px;
+            padding: 6px 10px;
+            font-size: 0.8rem;
+            border: 1px solid transparent;
+            color: var(--muted);
+            cursor: pointer;
+            background: transparent;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .topbar-link span.icon {
+            font-size: 0.95rem;
+        }
+
+        .topbar-link.active {
+            background: rgba(37, 99, 235, 0.14);
+            border-color: var(--accent-muted);
+            color: var(--text-soft);
+        }
+
+        .topbar-right {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            padding: 3px 10px;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            color: var(--muted);
+        }
+
+        html[data-theme="light"] .pill {
+            background: rgba(249, 250, 251, 0.9);
+        }
+
+        .btn-theme-toggle {
+            border-radius: 999px;
+            border: 1px solid rgba(148, 163, 184, 0.4);
+            background: var(--bg-soft);
+            color: var(--muted);
+            padding: 6px 10px;
+            font-size: 0.8rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+        }
+
+        /* ===========================
+           CONTEÚDO
+           =========================== */
+
+        .content {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            padding: 14px;
+        }
+
+        .card-shell {
+            width: 100%;
+            max-width: 1100px;
+        }
+
+        .card {
+            width: 100%;
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            padding: 18px 16px 22px;
+            box-shadow: var(--shadow-soft);
+            border: 1px solid rgba(148, 163, 184, 0.25);
+        }
+
+        .card-header {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-bottom: 16px;
+        }
+
+        .title {
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .subtitle {
+            font-size: 0.9rem;
+            color: var(--muted);
+        }
+
+        .meta-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 4px;
+        }
+
+        /* GRID PRINCIPAL: FORM + LISTA */
+        .main-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.2fr);
+            gap: 14px;
+        }
+
+        @media (max-width: 880px) {
+            .main-grid {
+                grid-template-columns: minmax(0, 1fr);
+            }
+
+            .topbar-inner {
+                flex-wrap: wrap;
+            }
+
+            .topbar-nav {
+                margin-left: 0;
+            }
+        }
+
+        .section-card {
+            background: var(--bg-elevated);
+            border-radius: var(--radius-md);
+            padding: 12px 10px 10px;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .section-title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            gap: 8px;
+        }
+
+        .section-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--muted-soft);
+        }
+
+        /* ===========================
+           FORMULÁRIO
+           =========================== */
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 8px;
+        }
+
+        .field-label {
+            font-size: 0.8rem;
+            margin-bottom: 3px;
+            color: var(--muted);
+        }
+
+        .field-control {
+            position: relative;
+        }
+
+        input[type="text"],
+        input[type="date"],
+        input[type="number"],
+        select {
+            width: 100%;
+            border-radius: var(--radius-pill);
+            border: 1px solid rgba(148, 163, 184, 0.4);
+            background: radial-gradient(circle at top left, #0b1120 0, #020617 55%);
+            color: var(--text);
+            padding: 8px 12px;
+            font-size: 0.89rem;
+            outline: none;
+            transition: border-color .15s, box-shadow .15s, background .15s, transform .05s;
+        }
+
+        html[data-theme="light"] input[type="text"],
+        html[data-theme="light"] input[type="date"],
+        html[data-theme="light"] input[type="number"],
+        html[data-theme="light"] select {
+            background: #f9fafb;
+        }
+
+        input[type="text"]:focus,
+        input[type="date"]:focus,
+        input[type="number"]:focus,
+        select:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 1px rgba(37, 99, 235, .7);
+            transform: translateY(-0.5px);
+        }
+
+        input::placeholder {
+            color: #6b7280;
+        }
+
+        .camera-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        @media (max-width: 520px) {
+            .camera-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+
+        .hint {
+            font-size: 0.75rem;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        /* BOTÕES GENÉRICOS */
+
+        .btn {
+            border: none;
+            border-radius: var(--radius-pill);
+            padding: 9px 16px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background .15s, transform .07s, box-shadow .15s, border-color .15s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+            box-shadow: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent) 0, var(--accent-soft) 100%);
+            color: #f9fafb;
+            box-shadow: 0 10px 24px rgba(37, 99, 235, 0.45);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.55;
+            cursor: default;
+            box-shadow: none;
+        }
+
+        .btn-secondary {
+            background: rgba(15, 23, 42, 0.9);
+            color: var(--text);
+            border: 1px solid rgba(148, 163, 184, 0.5);
+        }
+
+        html[data-theme="light"] .btn-secondary {
+            background: #f9fafb;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #b91c1c 0, #7f1d1d 100%);
+            color: #fee2e2;
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--muted-soft);
+            border: 1px dashed rgba(148, 163, 184, 0.6);
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 0.78rem;
+        }
+
+        .btn-icon {
+            font-size: 1rem;
+        }
+
+        .actions-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+            justify-content: flex-end;
+        }
+
+        .actions-row .btn {
+            min-width: 120px;
+        }
+
+        /* ===========================
+           PREVIEW DA CÂMERA
+           =========================== */
+
+        .video-wrapper {
+            margin-top: 8px;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            background: #020617;
+            border: 1px dashed rgba(148, 163, 184, 0.5);
+            position: relative;
+            aspect-ratio: 16 / 9;
+        }
+
+        .video-wrapper video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .video-overlay {
+            position: absolute;
+            inset: 8%;
+            border-radius: 10px;
+            border: 2px solid rgba(248, 250, 252, .7);
+            box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.35);
+            pointer-events: none;
+        }
+
+        /* ===========================
+           FILTROS + TABELA
+           =========================== */
+
+        .filters-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .filters-row select,
+        .filters-row input[type="text"] {
+            min-width: 120px;
+            font-size: 0.8rem;
+            padding-inline: 10px;
+        }
+
+        .filters-row .btn {
+            padding-inline: 10px;
+        }
+
+        .table-wrapper {
+            margin-top: 6px;
+            border-radius: var(--radius-md);
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            overflow: hidden;
+            background: var(--bg-soft);
+        }
+
+        .records-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.78rem;
+        }
+
+        .records-table thead {
+            background: rgba(15, 23, 42, 0.9);
+        }
+
+        html[data-theme="light"] .records-table thead {
+            background: #e5e7eb;
+        }
+
+        .records-table thead th {
+            padding: 7px 8px;
+            text-align: left;
+            color: var(--muted-soft);
+            white-space: nowrap;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.45);
+        }
+
+        .records-table tbody td {
+            padding: 6px 8px;
+            border-bottom: 1px solid rgba(31, 41, 55, 0.65);
+        }
+
+        html[data-theme="light"] .records-table tbody td {
+            border-bottom-color: rgba(209, 213, 219, 0.9);
+        }
+
+        .records-table tbody tr:nth-child(even) {
+            background: rgba(15, 23, 42, 0.7);
+        }
+
+        html[data-theme="light"] .records-table tbody tr:nth-child(even) {
+            background: #f9fafb;
+        }
+
+        .records-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .col-id { width: 40px; text-align: center; }
+        .col-numero { min-width: 140px; }
+        .col-status { width: 90px; text-align: center; }
+        .col-tipo { min-width: 90px; }
+        .col-modelo { min-width: 90px; }
+        .col-agente { min-width: 90px; }
+        .col-qtd { width: 60px; text-align: center; }
+        .col-data { width: 98px; text-align: center; }
+        .col-acoes { width: 82px; text-align: center; }
+
+        .records-table tbody tr td.col-acoes {
+            white-space: nowrap;
+        }
+
+        .table-actions {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btn-table {
+            border-radius: 999px;
+            border: 1px solid rgba(148, 163, 184, 0.6);
+            background: rgba(15, 23, 42, 0.9);
+            color: var(--text-soft);
+            padding: 3px 8px;
+            font-size: 0.72rem;
+            cursor: pointer;
+        }
+
+        .btn-table-danger {
+            border-color: rgba(248, 113, 113, 0.8);
+            background: rgba(127, 29, 29, 0.95);
+            color: #fee2e2;
+        }
+
+        html[data-theme="light"] .btn-table {
+            background: #f9fafb;
+        }
+
+        .empty-row {
+            text-align: center;
+            padding: 16px 8px;
+            color: var(--muted);
+        }
+
+        /* Destaque SEM RETORNO */
+        .records-table tbody tr.sem-retorno {
+            background: rgba(250, 204, 21, 0.16);
+        }
+
+        .records-table tbody tr.sem-retorno td {
+            color: var(--text-soft);
+        }
+
+        html[data-theme="light"] .records-table tbody tr.sem-retorno {
+            background: rgba(250, 204, 21, 0.22);
+        }
+
+        html[data-theme="light"] .records-table tbody tr.sem-retorno td {
+            color: #111827;
+        }
+
+        /* ===========================
+           PAGINAÇÃO
+           =========================== */
+
+        .pagination-row {
+            margin-top: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 6px;
+            font-size: 0.78rem;
+            color: var(--muted);
+        }
+
+        .pagination-buttons {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .pagination-buttons a,
+        .pagination-buttons span {
+            border-radius: 999px;
+            padding: 3px 8px;
+            border: 1px solid transparent;
+            cursor: pointer;
+        }
+
+        .pagination-buttons span.current {
+            border-color: var(--accent-muted);
+            background: rgba(37, 99, 235, 0.15);
+            color: var(--text-soft);
+        }
+
+        .pagination-buttons a {
+            border-color: rgba(148, 163, 184, 0.4);
+            color: var(--muted-soft);
+            text-decoration: none;
+        }
+
+        .pagination-buttons a.disabled {
+            opacity: 0.4;
+            pointer-events: none;
+        }
+
+        /* ===========================
+           ESTATÍSTICAS SIMPLES
+           =========================== */
+
+        .stats-card {
+            margin-top: 14px;
+            background: var(--bg-elevated);
+            border-radius: var(--radius-md);
+            padding: 10px 10px 10px;
+            border: 1px dashed var(--border-subtle);
+            font-size: 0.82rem;
+            color: var(--muted-soft);
+        }
+
+        .stats-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .stat-pill {
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid rgba(148, 163, 184, 0.4);
+        }
+
+        /* Tabela de registros */
+        .table-wrapper {
+            margin-top: 14px;
+            border-radius: 12px;
+            overflow-x: auto;
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            background: rgba(15, 23, 42, 0.9);
+        }
+
+        .table-registros {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.83rem;
+        }
+
+        .table-registros thead {
+            background: linear-gradient(135deg, #0f172a 0, #020617 100%);
+        }
+
+        .table-registros th,
+        .table-registros td {
+            padding: 6px 10px;
+            text-align: left;
+            border-bottom: 1px solid rgba(31, 41, 55, 0.9);
+            white-space: nowrap;
+        }
+
+        .table-registros tbody tr:hover {
+            background: rgba(37, 99, 235, 0.12);
+            cursor: pointer;
+        }
+
+        /* linha sem data de retorno */
+        .table-registros tr.sem-retorno {
+            background-color: rgba(250, 204, 21, 0.16); /* amarelo bem suave */
+        }
+
+        .table-registros tr.sem-retorno td {
+            color: #e5e7eb; /* texto claro mas legível */
+        }
+
+        /* célula de ações não faz o "clique na linha" */
+        .table-registros td.acoes {
+            white-space: nowrap;
+        }
+
+        /* botões mini de ação */
+        .btn-mini {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 8px;
+            border-radius: 999px;
+            border: none;
+            font-size: 0.75rem;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            margin-left: 4px;
+        }
+
+        .btn-mini-primary {
+            background: rgba(59, 130, 246, 0.15);
+            color: #bfdbfe;
+            border: 1px solid rgba(59, 130, 246, 0.6);
+        }
+
+        .btn-mini-danger {
+            background: rgba(248, 113, 113, 0.12);
+            color: #fecaca;
+            border: 1px solid rgba(239, 68, 68, 0.7);
+        }
+
+        .btn-mini:hover {
+            filter: brightness(1.1);
+        }
+
+        /* aviso de nenhum registro */
+        .no-data {
+            text-align: center;
+            padding: 14px 8px;
+            color: #9ca3af;
+        }
+
+        /* coluna de ações no topo */
+        .col-acoes {
+            text-align: center;
+        }
+
+        /* Mobile: tabela mais "scrollável" */
+        @media (max-width: 768px) {
+            .table-registros th,
+            .table-registros td {
+                font-size: 0.7rem;
+                padding: 5px 6px;
+            }
+
+            .btn-mini {
+                padding: 3px 6px;
+                font-size: 0.7rem;
+            }
+        }
+
+        html[data-theme="light"] .stat-pill {
+            background: #f9fafb;
+        }
+
+        /* ===========================
+           FAB (BOTÃO FLUTUANTE MOBILE)
+           =========================== */
+
+        .fab-novo {
+            position: fixed;
+            right: 16px;
+            bottom: 16px;
+            border-radius: 999px;
+            padding: 10px 16px;
+            background: linear-gradient(135deg, var(--accent) 0, var(--accent-soft) 100%);
+            box-shadow: 0 10px 30px rgba(37, 99, 235, 0.6);
+            color: #f9fafb;
+            font-size: 0.88rem;
+            display: none;
+            align-items: center;
+            gap: 6px;
+            z-index: 50;
+        }
+
+        .fab-novo .icon {
+            font-size: 1.1rem;
+        }
+
+        @media (max-width: 720px) {
+            .fab-novo {
+                display: inline-flex;
+            }
+        }
+        
+        /* Aparência dos selects na página */
+        select {
+            color: var(--text);
+            background-color: #020617; /* fundo escuro, combinando com o tema */
+            border-radius: 999px;
+        }
+
+        /* Aparência das opções quando o menu é aberto (depende um pouco do navegador) */
+        select option {
+            color: #020617;           /* texto escuro */
+            background-color: #e5e7eb; /* cinza claro */
+        }
+
+        .pagination-bar {
+            margin-top: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.8rem;
+            color: #9ca3af;
+        }
+
+        .pagination-buttons {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btn-page {
+            border-radius: 999px;
+            border: 1px solid rgba(148, 163, 184, 0.4);
+            background: rgba(15, 23, 42, 0.9);
+            color: #e5e7eb;
+            padding: 3px 8px;
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+
+        .btn-page[disabled] {
+            opacity: 0.35;
+            cursor: default;
+        }
+
+        .page-label {
+            padding: 3px 8px;
+        }
+
+        /* Mobile: deixa tudo mais compacto */
+        @media (max-width: 768px) {
+            .pagination-bar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .btn-page {
+                padding: 3px 6px;
+                font-size: 0.7rem;
+            }
+        }
+
+                /* ====== BARRA SUPERIOR / NAV ====== */
+        .top-nav {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: rgba(15, 23, 42, 0.97);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+            backdrop-filter: blur(18px);
+        }
+
+        .nav-inner {
+            max-width: 1120px;
+            margin: 0 auto;
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .nav-left {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .nav-logo {
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        .nav-subtitle {
+            font-size: 0.75rem;
+            color: var(--muted);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .nav-link {
+            font-size: 0.85rem;
+            padding: 6px 12px;
+            border-radius: 999px;
+            border: 1px solid transparent;
+            color: var(--muted);
+            text-decoration: none;
+            transition: background .15s, color .15s, border-color .15s;
+        }
+
+        .nav-link:hover {
+            background: rgba(37, 99, 235, 0.1);
+            color: var(--text);
+            border-color: rgba(37, 99, 235, 0.4);
+        }
+
+        .nav-link-active {
+            background: linear-gradient(135deg, var(--accent) 0, var(--accent-soft) 100%);
+            color: #f9fafb;
+            border-color: transparent;
+            box-shadow: 0 8px 18px rgba(37, 99, 235, 0.45);
+        }
+
+        /* Dá um respiro na parte de baixo pra não colar no header */
+        .page {
+            padding-top: 72px;
+        }
+            </style>
+        </head>
+    <body>
+        
+    <header class="top-nav">
+        <div class="nav-inner">
+            <div class="nav-left">
+                <span class="nav-logo">⚙️ Registro de Equipamentos</span>
+                <span class="nav-subtitle">Desktop + Mobile • FastAPI + SQLite</span>
+            </div>
+            <nav class="nav-links">
+                <!-- Registrar sempre volta para /novo -->
+                <a href="/novo" class="nav-link nav-link-active">Registrar</a>
+                <!-- Listar rola para a tabela na mesma página -->
+                <a href="#lista-registros" class="nav-link">Listar</a>
+                <!-- Estatísticas (página simples que vamos criar já já) -->
+                <a href="/stats" class="nav-link">Estatísticas</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="page">
+
+            <div class="topbar-right">
+                <span class="pill">
+                    <span>Host:</span>
+                    <strong>{{ request.client.host }}:{{ request.url.port or 80 }}</strong>
+                </span>
+
+                <button type="button" id="btnThemeToggle" class="btn-theme-toggle">
+                    <span id="themeIcon">🌙</span>
+                    <span id="themeText">Escuro</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- CONTEÚDO -->
+    <main class="content">
+        <div class="card-shell">
+            <div class="card" id="lista-registros">
+                <header class="card-header">
+                    <div class="title">
+                        {% if registro_edicao is defined %}
+                            Editar Registro #{{ registro_edicao.id }}
+                        {% else %}
+                            Registro de Equipamentos (Web)
+                        {% endif %}
+                    </div>
+                    <div class="subtitle">
+                        Use o leitor de código de barras ou a câmera do celular para preencher o Número de Série.
+                    </div>
+                    <div class="meta-row">
+                        <span class="pill">
+                            <span>Registros:</span>
+                            <strong>{{ total }}</strong>
+                        </span>
+                        {% if filtro_status or filtro_agente or filtro_tipo or filtro_numero_serie %}
+                            <span class="pill">
+                                Filtros ativos
+                            </span>
+                        {% endif %}
+                    </div>
+                </header>
+
+                {% set editing = registro_edicao is defined %}
+
+                <div class="main-grid">
+                    <!-- =========================
+                         COLUNA ESQUERDA: FORM
+                         ========================= -->
+                    <section class="section-card" id="formSection">
+                        <div class="section-title-row">
+                            <div class="section-title">
+                                {% if editing %}Atualizar Registro{% else %}Novo Registro{% endif %}
+                            </div>
+                        </div>
+
+                        <form
+                            method="post"
+                            action="{% if editing %}/registros/{{ registro_edicao.id }}/editar{% else %}/novo{% endif %}"
+                        >
+                            <!-- Número de Série + Câmera -->
+                            <div class="field">
+                                <label class="field-label" for="numero_serie">Número de Série</label>
+                                <div class="camera-row">
+                                    <div class="field-control" style="flex:1;">
+                                        <input
+                                            id="numero_serie"
+                                            name="numero_serie"
+                                            type="text"
+                                            placeholder="Use o leitor ou a câmera"
+                                            autocomplete="off"
+                                            required
+                                            value="{% if editing %}{{ registro_edicao.numero_serie }}{% endif %}"
+                                        />
+                                    </div>
+                                    <button
+                                        type="button"
+                                        id="btnCamera"
+                                        class="btn btn-primary btn-small"
+                                    >
+                                        <span class="btn-icon">📷</span>
+                                        <span>Ler</span>
+                                    </button>
+                                </div>
+                                <div class="hint">
+                                    Ao ler um código válido, o campo será preenchido automaticamente e a câmera será desligada.
+                                </div>
+                                <div class="hint" id="lookupStatus"></div>
+                            </div>
+
+                            <!-- Status -->
+                            <div class="field">
+                                <label class="field-label" for="status">Status</label>
+                                <div class="field-control">
+                                    <select id="status" name="status">
+                                        {% for s in status_opcoes %}
+                                            <option value="{{ s }}"
+                                                {% if editing and registro_edicao.status == s %}selected{% endif %}
+                                            >
+                                                {{ s }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Tipo -->
+                            <div class="field">
+                                <label class="field-label" for="tipo">Tipo de Equipamento</label>
+                                <div class="field-control">
+                                    <select id="tipo" name="tipo">
+                                        {% for t in tipos %}
+                                            <option value="{{ t }}"
+                                                {% if editing and registro_edicao.tipo_equipamento == t %}selected{% endif %}
+                                            >
+                                                {{ t }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Modelo -->
+                            <div class="field">
+                                <label class="field-label" for="modelo">Modelo</label>
+                                <div class="field-control">
+                                    <select id="modelo" name="modelo">
+                                        {% for m in modelos %}
+                                            <option value="{{ m }}"
+                                                {% if editing and registro_edicao.modelo == m %}selected{% endif %}
+                                            >
+                                                {{ m }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Agente -->
+                            <div class="field">
+                                <label class="field-label" for="agente">Agente</label>
+                                <div class="field-control">
+                                    <select id="agente" name="agente">
+                                        {% for a in agentes %}
+                                            <option value="{{ a }}"
+                                                {% if editing and registro_edicao.agente == a %}selected{% endif %}
+                                            >
+                                                {{ a }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Quantidade -->
+                            <div class="field">
+                                <label class="field-label" for="quantidade">Quantidade</label>
+                                <div class="field-control" style="max-width: 120px;">
+                                    <input
+                                        id="quantidade"
+                                        name="quantidade"
+                                        type="number"
+                                        min="1"
+                                        value="{% if editing %}{{ registro_edicao.quantidade }}{% else %}1{% endif %}"
+                                    />
+                                </div>
+                            </div>
+
+                            <!-- Datas -->
+                            <div class="field">
+                                <label class="field-label" for="data_saida">Data Saída</label>
+                                <div class="field-control" style="max-width: 180px;">
+                                    <input
+                                        id="data_saida"
+                                        name="data_saida"
+                                        type="date"
+                                        value="{% if editing and registro_edicao.data_saida and '-' in registro_edicao.data_saida %}{{ registro_edicao.data_saida }}{% endif %}"
+                                    />
+                                </div>
+                            </div>
+
+                            <div class="field">
+                                <label class="field-label" for="data_retorno">Data Retorno</label>
+                                <div class="field-control" style="max-width: 180px;">
+                                    <input
+                                        id="data_retorno"
+                                        name="data_retorno"
+                                        type="date"
+                                        value="{% if editing and registro_edicao.data_retorno and '-' in registro_edicao.data_retorno %}{{ registro_edicao.data_retorno }}{% endif %}"
+                                    />
+                                </div>
+                            </div>
+
+                            <!-- AÇÕES DO FORM -->
+                            <div class="actions-row">
+                                <button type="submit" class="btn btn-primary">
+                                    {% if editing %}💾 Atualizar{% else %}💾 Salvar Registro{% endif %}
+                                </button>
+
+                                <button type="reset" class="btn btn-secondary">
+                                    Limpar
+                                </button>
+
+                                {% if editing %}
+                                    <a href="/novo" class="btn btn-ghost">
+                                        Cancelar edição
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </form>
+
+                        <!-- Preview da câmera -->
+                        <div class="field" style="margin-top: 12px;">
+                            <span class="field-label">Preview da Câmera</span>
+                            <div class="video-wrapper">
+                                <video id="videoPreview" playsinline></video>
+                                <div class="video-overlay"></div>
+                            </div>
+                            <div class="hint">
+                                Posicione o código dentro da área marcada. Quando o código for lido, o campo será preenchido e a câmera desligará.
+                            </div>
+                            <div class="hint" id="lookupStatus"></div>
+                        </div>
+                    </section>
+
+                    <!-- =========================
+                         COLUNA DIREITA: FILTROS + LISTA
+                         ========================= -->
+                    <section class="section-card" id="listaSection">
+                        <div class="section-title-row">
+                            <div class="section-title">Listagem de Registros</div>
+                        </div>
+
+                        <!-- FILTROS -->
+                        <form method="get" action="/novo" class="filters-row">
+                            <input type="hidden" name="page" value="1" />
+
+                            <div class="field-control" style="min-width: 130px;">
+                                <select name="filtro_status">
+                                    <option value="">Status (todos)</option>
+                                    {% for s in status_opcoes %}
+                                        <option value="{{ s }}"
+                                            {% if filtro_status == s %}selected{% endif %}
+                                        >
+                                            {{ s }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="field-control" style="min-width: 130px;">
+                                <select name="filtro_agente">
+                                    <option value="">Agente (todos)</option>
+                                    {% for a in agentes %}
+                                        <option value="{{ a }}"
+                                            {% if filtro_agente == a %}selected{% endif %}
+                                        >
+                                            {{ a }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="field-control" style="min-width: 130px;">
+                                <select name="filtro_tipo">
+                                    <option value="">Tipo (todos)</option>
+                                    {% for t in tipos %}
+                                        <option value="{{ t }}"
+                                            {% if filtro_tipo == t %}selected{% endif %}
+                                        >
+                                            {{ t }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="field-control" style="flex:1; min-width: 140px;">
+                                <input
+                                    type="text"
+                                    name="filtro_numero_serie"
+                                    placeholder="Filtrar por Nº de Série..."
+                                    value="{{ filtro_numero_serie }}"
+                                />
+                            </div>
+
+                            <button type="submit" class="btn btn-secondary btn-small">
+                                🔎 Filtrar
+                            </button>
+
+                            <a href="/novo" class="btn btn-ghost btn-small">
+                                Limpar
+                            </a>
+                        </form>
+
+                        <!-- TABELA -->
+                        <div class="table-wrapper">
+                            <table class="table-registros">
+                                <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nº Série</th>
+                                    <th>Status</th>
+                                    <th>Tipo</th>
+                                    <th>Modelo</th>
+                                    <th>Agente</th>
+                                    <th>Qtd.</th>
+                                    <th>Saída</th>
+                                    <th>Retorno</th>
+                                    <th class="col-acoes">Ações</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {% for r in registros %}
+                                    <tr
+                                        data-id="{{ r.id }}"
+                                        class="{% if not r.data_retorno %}sem-retorno{% endif %}"
+                                    >
+                                        <td>#{{ r.id }}</td>
+                                        <td>{{ r.numero_serie }}</td>
+                                        <td>{{ r.status }}</td>
+                                        <td>{{ r.tipo_equipamento }}</td>
+                                        <td>{{ r.modelo }}</td>
+                                        <td>{{ r.agente }}</td>
+                                        <td>{{ r.quantidade }}</td>
+                                        <td>{{ r.data_saida or "-" }}</td>
+                                        <td>{{ r.data_retorno or "-" }}</td>
+                                        <td class="acoes">
+                                            <a
+                                                href="/registros/{{ r.id }}/editar"
+                                                class="btn-mini btn-mini-primary"
+                                                title="Editar registro"
+                                            >
+                                                ✏️ Editar
+                                            </a>
+
+                                            <form
+                                                method="post"
+                                                action="/registros/{{ r.id }}/excluir"
+                                                class="form-excluir"
+                                            >
+                                                <button
+                                                    type="submit"
+                                                    class="btn-mini btn-mini-danger"
+                                                    title="Excluir registro"
+                                                >
+                                                    🗑 Excluir
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+
+                                {% if not registros %}
+                                    <tr>
+                                        <td colspan="10" class="no-data">
+                                            Nenhum registro encontrado.
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="pagination-bar">
+                            <div class="pagination-info">
+                                Página {{ page }} de {{ total_pages }} • {{ total }} registro{% if total != 1 %}s{% endif %}
+                            </div>
+
+                            <form method="get"
+                                class="pagination-form"
+                                data-total-pages="{{ total_pages }}"
+                                data-current-page="{{ page }}">
+                                <!-- preserva filtros atuais -->
+                                <input type="hidden" name="filtro_status" value="{{ filtro_status }}">
+                                <input type="hidden" name="filtro_agente" value="{{ filtro_agente }}">
+                                <input type="hidden" name="filtro_tipo" value="{{ filtro_tipo }}">
+                                <input type="hidden" name="filtro_numero_serie" value="{{ filtro_numero_serie }}">
+
+                                <input type="hidden" name="page" value="{{ page }}" class="page-input">
+
+                                <div class="pagination-buttons">
+                                    <button type="button" class="btn-page"
+                                            data-nav="first"
+                                            {% if page <= 1 %}disabled{% endif %}>«</button>
+
+                                    <button type="button" class="btn-page"
+                                            data-nav="prev"
+                                            {% if page <= 1 %}disabled{% endif %}>‹</button>
+
+                                    <span class="page-label">{{ page }}/{{ total_pages }}</span>
+
+                                    <button type="button" class="btn-page"
+                                            data-nav="next"
+                                            {% if page >= total_pages %}disabled{% endif %}>›</button>
+
+                                    <button type="button" class="btn-page"
+                                            data-nav="last"
+                                            {% if page >= total_pages %}disabled{% endif %}>»</button>
+                                </div>
+                            </form>
+                        </div>
+
+
+                        <!-- PAGINAÇÃO -->
+                        <div class="pagination-row">
+                            <div>
+                                Página {{ page }} de {{ total_pages }} • Total: {{ total }} registro(s)
+                            </div>
+                            <div class="pagination-buttons">
+                                {# botão anterior #}
+                                {% if page > 1 %}
+                                    <a href="/novo?page={{ page - 1 }}&filtro_status={{ filtro_status }}&filtro_agente={{ filtro_agente }}&filtro_tipo={{ filtro_tipo }}&filtro_numero_serie={{ filtro_numero_serie }}" >
+                                        ◀ Anterior
+                                    </a>
+                                {% else %}
+                                    <a class="disabled">◀ Anterior</a>
+                                {% endif %}
+
+                                <span class="current">{{ page }}</span>
+
+                                {% if page < total_pages %}
+                                    <a href="/novo?page={{ page + 1 }}&filtro_status={{ filtro_status }}&filtro_agente={{ filtro_agente }}&filtro_tipo={{ filtro_tipo }}&filtro_numero_serie={{ filtro_numero_serie }}" >
+                                        Próxima ▶
+                                    </a>
+                                {% else %}
+                                    <a class="disabled">Próxima ▶</a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- ESTATÍSTICAS SIMPLES -->
+                <section class="stats-card" id="statsSection">
+                    <div class="section-title-row" style="margin-bottom: 6px;">
+                        <div class="section-title">Estatísticas (simples)</div>
+                    </div>
+                    <div class="stats-row">
+                        <div class="stat-pill">
+                            <strong>Total:</strong> {{ total }} registro(s)
+                        </div>
+                        <div class="stat-pill">
+                            <strong>Página atual:</strong> {{ page }} / {{ total_pages }}
+                        </div>
+                        <div class="stat-pill">
+                            <strong>Sem retorno:</strong> linhas em amarelo
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <!-- FAB MOBILE -->
+    <a href="#formSection" class="fab-novo" id="fabNovo">
+        <span class="icon">＋</span>
+        <span>Novo Registro</span>
+    </a>
+</div>
+
+<!-- ZXing para leitura de códigos (CDN) -->
+<script src="https://unpkg.com/@zxing/library@0.20.0/umd/index.min.js"></script>
+
+<script>
+    // Referências
+    const btnCamera = document.getElementById("btnCamera");
+    const video = document.getElementById("videoPreview");
+    const inputNumeroSerie = document.getElementById("numero_serie");
+    const lookupStatusEl = document.getElementById("lookupStatus");
+    const videoWrapper = document.querySelector(".video-wrapper");
+
+    let codeReader = null;
+    let scanning = false;
+
+    function suportaCamera() {
+        return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+    }
+
+    // ------------------- API: preencher dados pelo último registro -------------------
+    async function preencherComUltimoRegistro(numero) {
+        const codigo = (numero || "").trim();
+        if (!codigo) {
+            if (lookupStatusEl) lookupStatusEl.textContent = "";
+            return;
+        }
+
+        if (lookupStatusEl) {
+            lookupStatusEl.textContent = "Procurando registros anteriores...";
+        }
+
+        try {
+            const url = `/api/registros?numero_serie=${encodeURIComponent(codigo)}&page_size=1`;
+            const resp = await fetch(url);
+
+            if (!resp.ok) {
+                if (lookupStatusEl) {
+                    lookupStatusEl.textContent = "Não foi possível consultar a API.";
+                }
+                return;
+            }
+
+            const data = await resp.json();
+
+            // Tenta suportar dois formatos: { items: [...] } OU [...]
+            let itens = [];
+            if (Array.isArray(data)) {
+                itens = data;
+            } else if (Array.isArray(data.items)) {
+                itens = data.items;
+            }
+
+            if (!itens.length) {
+                if (lookupStatusEl) {
+                    lookupStatusEl.textContent = "Nenhum registro anterior encontrado para este número.";
+                }
+                return;
+            }
+
+            const r = itens[0];
+
+            // Preenche campos principais (não mexe em datas)
+            const campoStatus = document.getElementById("status");
+            const campoTipo = document.getElementById("tipo");
+            const campoModelo = document.getElementById("modelo");
+            const campoAgente = document.getElementById("agente");
+            const campoQtd = document.getElementById("quantidade");
+
+            if (campoStatus && r.status) campoStatus.value = r.status;
+            if (campoTipo && (r.tipo_equipamento || r.tipo)) {
+                campoTipo.value = r.tipo_equipamento || r.tipo;
+            }
+            if (campoModelo && r.modelo) campoModelo.value = r.modelo;
+            if (campoAgente && r.agente) campoAgente.value = r.agente;
+            if (campoQtd && (r.quantidade != null)) campoQtd.value = r.quantidade;
+
+            if (lookupStatusEl) {
+                const descStatus = r.status || "sem status";
+                const descAgente = r.agente || "sem agente";
+                lookupStatusEl.textContent =
+                    `Último registro encontrado para este número • Status: ${descStatus} • Agente: ${descAgente}`;
+            }
+        } catch (err) {
+            console.error(err);
+            if (lookupStatusEl) {
+                lookupStatusEl.textContent = "Erro ao consultar API.";
+            }
+        }
+    }
+
+    // ------------------- CÂMERA + LEITOR -------------------
+    async function iniciarCameraELeitor() {
+        if (!suportaCamera()) {
+            alert("Este navegador não suporta acesso à câmera (getUserMedia). Tente usar o Chrome atualizado em HTTPS.");
+            return;
+        }
+
+        if (!codeReader) {
+            codeReader = new ZXing.BrowserMultiFormatReader();
+        }
+
+        // Se já está lendo, clicar de novo desliga
+        if (scanning) {
+            pararLeitor();
+            return;
+        }
+
+        try {
+            scanning = true;
+            btnCamera.textContent = "Parar Câmera";
+
+            const devices = await codeReader.listVideoInputDevices();
+            if (!devices || devices.length === 0) {
+                alert("Nenhuma câmera encontrada no dispositivo.");
+                pararLeitor();
+                return;
+            }
+
+            // tenta pegar a câmera traseira
+            let deviceId = devices[0].deviceId;
+            const back = devices.find(d =>
+                (d.label || "").toLowerCase().includes("back") ||
+                (d.label || "").toLowerCase().includes("traseira")
+            );
+            if (back) {
+                deviceId = back.deviceId;
+            }
+
+            await codeReader.decodeFromVideoDevice(deviceId, video, (result, err) => {
+                if (result) {
+                    const texto = result.text || "";
+                    inputNumeroSerie.value = texto;
+
+                    if (window.navigator.vibrate) {
+                        window.navigator.vibrate(120);
+                    }
+
+                    // Chama API para preencher os outros campos
+                    preencherComUltimoRegistro(texto);
+
+                    pararLeitor();
+                }
+                // erros contínuos de leitura podem ser ignorados
+            });
+
+            // Assim que a câmera começa, rola a tela até o preview
+            if (videoWrapper && videoWrapper.scrollIntoView) {
+                videoWrapper.scrollIntoView({ behavior: "smooth", block: "center" });
+            }
+
+        } catch (err) {
+            console.error(err);
+            alert("Erro ao abrir câmera: " + err);
+            pararLeitor();
+        }
+    }
+
+    function pararLeitor() {
+        if (codeReader) {
+            codeReader.reset();
+        }
+
+        if (video) {
+            video.srcObject = null;
+        }
+
+        scanning = false;
+        btnCamera.innerHTML = '<span class="btn-icon">📷</span><span>Ler com Câmera</span>';
+    }
+
+    btnCamera.addEventListener("click", function () {
+        iniciarCameraELeitor();
+    });
+
+    // Quando o usuário digitar / alterar o Número de Série manualmente
+    if (inputNumeroSerie) {
+        inputNumeroSerie.addEventListener("change", function () {
+            preencherComUltimoRegistro(this.value);
+        });
+    }
+
+    // Se sair da página ou esconder o app, garante que a câmera pare
+    window.addEventListener("pagehide", pararLeitor);
+    window.addEventListener("beforeunload", pararLeitor);
+
+
+       // --- Clique na linha abre a tela de edição ---
+    (function () {
+        // --- Clique na linha abre a tela de edição ---
+        const linhas = document.querySelectorAll(".table-registros tbody tr");
+
+        linhas.forEach((tr) => {
+            tr.addEventListener("click", function (ev) {
+                // Se clicou em botão/link/form dentro da célula de ações, não faz nada aqui
+                if (ev.target.closest(".acoes") || ev.target.closest("button") || ev.target.closest("a")) {
+                    return;
+                }
+
+                const id = this.dataset.id;
+                if (id) {
+                    window.location.href = `/registros/${id}/editar`;
+                }
+            });
+        });
+
+        // --- Confirmação ao excluir ---
+        const formsExcluir = document.querySelectorAll("form.form-excluir");
+        formsExcluir.forEach((form) => {
+            form.addEventListener("submit", function (ev) {
+                const ok = confirm("Deseja realmente excluir este registro?");
+                if (!ok) {
+                    ev.preventDefault();
+                }
+            });
+        });
+
+        // --- Paginação (first / prev / next / last) ---
+        const pagForm = document.querySelector(".pagination-form");
+        if (pagForm) {
+            const totalPages = parseInt(pagForm.dataset.totalPages || "1", 10);
+            const pageInput = pagForm.querySelector(".page-input");
+
+            pagForm.addEventListener("click", function (ev) {
+                const btn = ev.target.closest("button[data-nav]");
+                if (!btn || btn.disabled) {
+                    return;
+                }
+
+                ev.preventDefault();
+
+                let current = parseInt(pageInput.value || "1", 10);
+                let newPage = current;
+                const nav = btn.getAttribute("data-nav");
+
+                if (nav === "first") {
+                    newPage = 1;
+                } else if (nav === "prev") {
+                    newPage = Math.max(1, current - 1);
+                } else if (nav === "next") {
+                    newPage = Math.min(totalPages, current + 1);
+                } else if (nav === "last") {
+                    newPage = totalPages;
+                }
+
+                if (newPage === current) {
+                    return;
+                }
+
+                pageInput.value = String(newPage);
+                pagForm.submit();
+            });
+        }
+    })();
+
+</script>
+</body>
+</html>
+
+
+

@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h4 mb-0">Registros de Equipamentos</h1>
+    <a href="/novo" class="btn btn-sm btn-primary">
+        Novo Registro
+    </a>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        {% if registros %}
+            <div class="table-responsive">
+                <table class="table table-sm table-striped align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ID</th>
+                            <th>Nº Série</th>
+                            <th>Status</th>
+                            <th>Tipo</th>
+                            <th>Modelo</th>
+                            <th>Agente</th>
+                            <th>Qtd</th>
+                            <th>Saída</th>
+                            <th>Retorno</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in registros %}
+                            {# r = (id, numero_serie, status, tipo, modelo, agente, qtd, data_saida, data_retorno) #}
+                            <tr>
+                                <td>{{ r[0] }}</td>
+                                <td>{{ r[1] }}</td>
+                                <td>{{ r[2] }}</td>
+                                <td>{{ r[3] }}</td>
+                                <td>{{ r[4] }}</td>
+                                <td>{{ r[5] }}</td>
+                                <td>{{ r[6] }}</td>
+                                <td>{{ r[7] or "-" }}</td>
+                                <td>{{ r[8] or "-" }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-muted mb-0">Nenhum registro encontrado no banco.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+

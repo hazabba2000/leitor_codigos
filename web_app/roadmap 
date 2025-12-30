@@ -1,0 +1,25 @@
+Polir UX mobile
+
+Ajustar pequenos detalhes: tamanhos de fonte, esconder algumas colunas no celular, otimizar toques com o dedo (botões maiores etc.).
+
+Aprimorar filtros e busca por câmera
+
+Usar a câmera também na parte de filtros por Número de Série (pra localizar um equipamento só apontando pro código).
+
+Começar a transformar em “quase app” (PWA)
+
+Adicionar manifest, ícone, service worker básico, para:
+
+Instalar na tela inicial do Android;
+
+Abrir em tela cheia, sem barra do navegador.
+
+Dashboard web simples
+
+Gráficos tipo:
+
+Quantos em campo x estoque x manutenção;
+
+Por agente;
+
+Por tipo/modelo.

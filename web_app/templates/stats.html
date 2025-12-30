@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <title>Estatísticas - Registro de Equipamentos</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card-bg: #111827;
+            --accent: #2563eb;
+            --accent-soft: #1d4ed8;
+            --text: #f9fafb;
+            --muted: #9ca3af;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            background: radial-gradient(circle at top, #1e293b 0, #020617 55%);
+            color: var(--text);
+        }
+
+        .top-nav {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: rgba(15, 23, 42, 0.97);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+            backdrop-filter: blur(18px);
+        }
+
+        .nav-inner {
+            max-width: 1120px;
+            margin: 0 auto;
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .nav-left {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .nav-logo {
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        .nav-subtitle {
+            font-size: 0.75rem;
+            color: var(--muted);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .nav-link {
+            font-size: 0.85rem;
+            padding: 6px 12px;
+            border-radius: 999px;
+            border: 1px solid transparent;
+            color: var(--muted);
+            text-decoration: none;
+            transition: background .15s, color .15s, border-color .15s;
+        }
+
+        .nav-link:hover {
+            background: rgba(37, 99, 235, 0.1);
+            color: var(--text);
+            border-color: rgba(37, 99, 235, 0.4);
+        }
+
+        .nav-link-active {
+            background: linear-gradient(135deg, var(--accent) 0, var(--accent-soft) 100%);
+            color: #f9fafb;
+            border-color: transparent;
+            box-shadow: 0 8px 18px rgba(37, 99, 235, 0.45);
+        }
+
+        @media (max-width: 640px) {
+            .nav-inner {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .nav-links {
+                width: 100%;
+                justify-content: flex-start;
+                overflow-x: auto;
+            }
+        }
+
+        .page {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 90px 16px 24px;
+        }
+
+        .card {
+            width: 100%;
+            max-width: 960px;
+            background: rgba(15, 23, 42, 0.95);
+            border-radius: 18px;
+            padding: 24px 20px 26px;
+            box-shadow:
+                0 18px 45px rgba(0, 0, 0, 0.65),
+                0 0 0 1px rgba(148, 163, 184, 0.1);
+            backdrop-filter: blur(20px);
+        }
+
+        .title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .subtitle {
+            font-size: 0.9rem;
+            color: var(--muted);
+            margin-bottom: 16px;
+        }
+
+        .placeholder {
+            border-radius: 14px;
+            border: 1px dashed rgba(148, 163, 184, 0.5);
+            padding: 18px 14px;
+            font-size: 0.9rem;
+            color: var(--muted);
+        }
+    </style>
+</head>
+<body>
+
+<header class="top-nav">
+    <div class="nav-inner">
+        <div class="nav-left">
+            <span class="nav-logo">📊 Estatísticas</span>
+            <span class="nav-subtitle">Visão geral dos equipamentos (em breve)</span>
+        </div>
+        <nav class="nav-links">
+            <a href="/novo" class="nav-link">Registrar</a>
+            <a href="/novo#lista-registros" class="nav-link">Listar</a>
+            <a href="/stats" class="nav-link nav-link-active">Estatísticas</a>
+        </nav>
+    </div>
+</header>
+
+<div class="page">
+    <div class="card">
+        <div class="title">Estatísticas do Sistema</div>
+        <div class="subtitle">
+            Esta página será usada para gráficos e indicadores (por agente, por status, por modelo etc).
+        </div>
+        <div class="placeholder">
+            🔧 Ainda em construção.<br />
+            Nas próximas etapas vamos ligar esta página à API JSON /stats e montar gráficos (por exemplo, usando Chart.js).
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
