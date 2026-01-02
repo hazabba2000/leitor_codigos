@@ -90,65 +90,55 @@ jobs:
         run: |
           $ErrorActionPreference = "Stop"
           python -m pip install --upgrade pip
-          if (Test-Path "requirements.txt") {
-            pip install -r requirements.txt
+          if (Test-Path ".\requirements.txt") {
+            python -m pip install -r .\requirements.txt
+          } else {
+            Write-Host "requirements.txt não existe, pulando..." -ForegroundColor Yellow
           }
-          pip install pyinstaller
+          python -m pip install pyinstaller pillow
 
-      - name: Build Windows (scripts)
+      - name: Build Windows (EXE + Installer)
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
 
-          powershell -ExecutionPolicy Bypass -File .\registro_equipamentos_windows\build_windows.ps1
-          powershell -ExecutionPolicy Bypass -File .\registro_equipamentos_windows\build_installer_windows.ps1
-
-
-          # scripts do Windows ficam aqui no seu repo
           $winDir = ".\registro_equipamentos_windows"
 
-          if (Test-Path "$winDir\build_windows.ps1") {
-            powershell -ExecutionPolicy Bypass -File "$winDir\build_windows.ps1"
-          } else {
-            Write-Host "AVISO: build_windows.ps1 não encontrado em $winDir (pulando)."
+          if (!(Test-Path "$winDir\build_windows.ps1")) {
+            throw "build_windows.ps1 não encontrado em $winDir"
           }
+
+          powershell -ExecutionPolicy Bypass -File "$winDir\build_windows.ps1"
 
           if (Test-Path "$winDir\build_installer_windows.ps1") {
             powershell -ExecutionPolicy Bypass -File "$winDir\build_installer_windows.ps1"
           } else {
-            Write-Host "AVISO: build_installer_windows.ps1 não encontrado em $winDir (pulando installer)."
+            Write-Host "AVISO: build_installer_windows.ps1 não encontrado (pulando installer)." -ForegroundColor Yellow
           }
-
-          # fallback: se não gerou nada, tenta o spec (se existir)
-          $hasDist = Test-Path ".\dist"
-          $hasInstaller = Test-Path ".\dist_installer"
-          $hasAnyExe = @(Get-ChildItem -Path . -Recurse -Filter *.exe -ErrorAction SilentlyContinue).Count -gt 0
-          $hasAnyMsi = @(Get-ChildItem -Path . -Recurse -Filter *.msi -ErrorAction SilentlyContinue).Count -gt 0
-
-          if (-not $hasDist -and -not $hasInstaller -and -not $hasAnyExe -and -not $hasAnyMsi) {
-            if (Test-Path ".\LeitorCodigos.spec") {
-              Write-Host "Nenhuma saída detectada. Rodando fallback: PyInstaller LeitorCodigos.spec"
-              python -m PyInstaller --noconfirm .\LeitorCodigos.spec
-            } else {
-              throw "Nenhuma saída gerada e LeitorCodigos.spec não encontrado."
-            }
-          }
-      - name: Debug dist tree (first 20)
+      - name: Build Windows (scripts)
         shell: pwsh
         run: |
+          $ErrorActionPreference = "Stop"
+          powershell -ExecutionPolicy Bypass -File .\registro_equipamentos_windows\build_windows.ps1
+          powershell -ExecutionPolicy Bypass -File .\registro_equipamentos_windows\build_installer_windows.ps1
+
+      - name: Debug dist tree (first 20)
+        if: ${{ always() }}
+        shell: pwsh
+        run: |
+          Write-Host "=== dist root ==="
+          if (Test-Path ".\dist") { Get-ChildItem ".\dist" | Select-Object FullName } else { "dist não existe" }
+
           Write-Host "=== dist\LeitorCodigos (first 20) ==="
           if (Test-Path ".\dist\LeitorCodigos") {
-            Get-ChildItem ".\dist\LeitorCodigos" -Recurse |
-              Select-Object -First 20 FullName
+            Get-ChildItem ".\dist\LeitorCodigos" -Recurse | Select-Object -First 20 FullName
           } else {
-            Write-Host "dist\LeitorCodigos não existe."
-            if (Test-Path ".\dist") {
-              Write-Host "=== dist root ==="
-              Get-ChildItem ".\dist" | Select-Object FullName
-            }
+            "dist\LeitorCodigos não existe"
           }
 
+
       - name: Debug outputs
+        if: ${{ always() }}
         shell: pwsh
         run: |
           Write-Host "=== LIST dist ==="
@@ -157,23 +147,22 @@ jobs:
           if (Test-Path ".\build") { Get-ChildItem .\build -Recurse | Select-Object FullName }
           Write-Host "=== LIST dist_installer ==="
           if (Test-Path ".\dist_installer") { Get-ChildItem .\dist_installer -Recurse | Select-Object FullName }
+            - name: Package Windows artifacts (zip)
+              shell: pwsh
+              run: |
+                $ErrorActionPreference = "Stop"
 
-      - name: Package Windows artifacts (zip)
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = "Stop"
-
-          if (Test-Path ".\dist") {
-            Compress-Archive -Path .\dist\* -DestinationPath LeitorCodigos-windows.zip -Force
-          } elseif (Test-Path ".\dist_installer") {
-            Compress-Archive -Path .\dist_installer\* -DestinationPath LeitorCodigos-windows.zip -Force
-          } elseif (Test-Path ".\build") {
-            Compress-Archive -Path .\build\* -DestinationPath LeitorCodigos-windows.zip -Force
-          } else {
-            throw "Não encontrei dist/, dist_installer/ nem build/ para empacotar."
-          }
+                # prioriza installer se existir, senão dist
+                if (Test-Path ".\dist_installer") {
+                  Compress-Archive -Path .\dist_installer\* -DestinationPath LeitorCodigos-windows.zip -Force
+                } elseif (Test-Path ".\dist") {
+                  Compress-Archive -Path .\dist\* -DestinationPath LeitorCodigos-windows.zip -Force
+                } else {
+                  throw "Não encontrei dist_installer/ nem dist/ para empacotar."
+                }
 
       - name: Upload Windows artifacts
+        if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
           name: LeitorCodigos-windows
