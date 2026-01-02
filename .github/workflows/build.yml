@@ -90,31 +90,9 @@ jobs:
         run: |
           $ErrorActionPreference = "Stop"
           python -m pip install --upgrade pip
-          if (Test-Path ".\requirements.txt") {
-            python -m pip install -r .\requirements.txt
-          } else {
-            Write-Host "requirements.txt não existe, pulando..." -ForegroundColor Yellow
-          }
-          python -m pip install pyinstaller pillow
+          if (Test-Path "requirements.txt") { pip install -r requirements.txt }
+          pip install pyinstaller pillow
 
-      - name: Build Windows (EXE + Installer)
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = "Stop"
-
-          $winDir = ".\registro_equipamentos_windows"
-
-          if (!(Test-Path "$winDir\build_windows.ps1")) {
-            throw "build_windows.ps1 não encontrado em $winDir"
-          }
-
-          powershell -ExecutionPolicy Bypass -File "$winDir\build_windows.ps1"
-
-          if (Test-Path "$winDir\build_installer_windows.ps1") {
-            powershell -ExecutionPolicy Bypass -File "$winDir\build_installer_windows.ps1"
-          } else {
-            Write-Host "AVISO: build_installer_windows.ps1 não encontrado (pulando installer)." -ForegroundColor Yellow
-          }
       - name: Build Windows (scripts)
         shell: pwsh
         run: |
@@ -126,16 +104,16 @@ jobs:
         if: ${{ always() }}
         shell: pwsh
         run: |
-          Write-Host "=== dist root ==="
-          if (Test-Path ".\dist") { Get-ChildItem ".\dist" | Select-Object FullName } else { "dist não existe" }
-
           Write-Host "=== dist\LeitorCodigos (first 20) ==="
           if (Test-Path ".\dist\LeitorCodigos") {
             Get-ChildItem ".\dist\LeitorCodigos" -Recurse | Select-Object -First 20 FullName
           } else {
-            "dist\LeitorCodigos não existe"
+            Write-Host "dist\LeitorCodigos não existe."
+            if (Test-Path ".\dist") {
+              Write-Host "=== dist root ==="
+              Get-ChildItem ".\dist" | Select-Object FullName
+            }
           }
-
 
       - name: Debug outputs
         if: ${{ always() }}
@@ -143,23 +121,22 @@ jobs:
         run: |
           Write-Host "=== LIST dist ==="
           if (Test-Path ".\dist") { Get-ChildItem .\dist -Recurse | Select-Object FullName }
-          Write-Host "=== LIST build ==="
-          if (Test-Path ".\build") { Get-ChildItem .\build -Recurse | Select-Object FullName }
+
           Write-Host "=== LIST dist_installer ==="
           if (Test-Path ".\dist_installer") { Get-ChildItem .\dist_installer -Recurse | Select-Object FullName }
-            - name: Package Windows artifacts (zip)
-              shell: pwsh
-              run: |
-                $ErrorActionPreference = "Stop"
 
-                # prioriza installer se existir, senão dist
-                if (Test-Path ".\dist_installer") {
-                  Compress-Archive -Path .\dist_installer\* -DestinationPath LeitorCodigos-windows.zip -Force
-                } elseif (Test-Path ".\dist") {
-                  Compress-Archive -Path .\dist\* -DestinationPath LeitorCodigos-windows.zip -Force
-                } else {
-                  throw "Não encontrei dist_installer/ nem dist/ para empacotar."
-                }
+      - name: Package Windows artifacts (zip)
+        if: ${{ always() }}
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          if (Test-Path ".\dist") {
+            Compress-Archive -Path .\dist\* -DestinationPath LeitorCodigos-windows.zip -Force
+          } elseif (Test-Path ".\dist_installer") {
+            Compress-Archive -Path .\dist_installer\* -DestinationPath LeitorCodigos-windows.zip -Force
+          } else {
+            throw "Não encontrei dist/ nem dist_installer/ para empacotar."
+          }
 
       - name: Upload Windows artifacts
         if: ${{ always() }}
@@ -168,8 +145,6 @@ jobs:
           name: LeitorCodigos-windows
           path: |
             dist/**
-            build/**
             dist_installer/**
-            *.exe
-            *.msi
             *.zip
+
