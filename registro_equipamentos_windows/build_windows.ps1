@@ -21,6 +21,7 @@ pyinstaller `
   --name "LeitorCodigos" `
   --windowed `
   --add-data "assets;assets" `
+  --add-data "data/equipamentos_template.db;data/equipamentos_template.db" `
   --hidden-import PIL._tkinter_finder `
   --hidden-import PIL.ImageTk `
   --collect-all PIL `

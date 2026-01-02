@@ -1,21 +1,27 @@
 # -*- mode: python ; coding: utf-8 -*-
 from PyInstaller.utils.hooks import collect_all
+from pathlib import Path
 
+project_dir = Path(__file__).resolve().parent
+
+# Inclui tudo que está em assets/ (imagens, temas, etc.)
 datas = [
     ('assets', 'assets'),
-    ]
+    ('equipamentos_template.db', '.'),
+]
 
 binaries = []
-hiddenimports = ['PIL._tkinter_finder', 'PIL.ImageTk']
+hiddenimports = ["PIL._tkinter_finder", "PIL.ImageTk"]
 
-tmp_ret = collect_all('PIL')
-datas += tmp_ret[0]
-binaries += tmp_ret[1]
-hiddenimports += tmp_ret[2]
+# Bundle completo do Pillow (PIL) para evitar erro no runtime
+tmp_datas, tmp_bins, tmp_hidden = collect_all("PIL")
+datas += tmp_datas
+binaries += tmp_bins
+hiddenimports += tmp_hidden
 
 a = Analysis(
-    ['main.py'],
-    pathex=[],
+    ["main.py"],
+    pathex=[str(project_dir)],
     binaries=binaries,
     datas=datas,
     hiddenimports=hiddenimports,
@@ -34,11 +40,11 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='LeitorCodigos',
+    name="LeitorCodigos",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,
+    upx=True,          # no Linux, o PyInstaller pode desabilitar UPX automaticamente no CI (ok)
     console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
@@ -54,5 +60,5 @@ coll = COLLECT(
     strip=False,
     upx=False,
     upx_exclude=[],
-    name='LeitorCodigos',
+    name="LeitorCodigos",
 )

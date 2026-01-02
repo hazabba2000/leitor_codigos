@@ -2,60 +2,80 @@
 set -euo pipefail
 
 APP="LeitorCodigos"
-DIST_DIR="dist/${APP}"
 APPDIR="AppDir"
 
-# 0) sanity
-test -f "${DIST_DIR}/${APP}" || { echo "ERRO: não achei ${DIST_DIR}/${APP}. Rode o PyInstaller antes."; exit 1; }
-test -d "${DIST_DIR}/_internal" || { echo "ERRO: não achei ${DIST_DIR}/_internal. Build do PyInstaller está incompleto."; exit 1; }
+# 1) Build (garante que exista dist/LeitorCodigos)
+python -m PyInstaller --noconfirm "${APP}.spec"
 
-# 1) limpa AppDir
-rm -rf "${APPDIR}"
-mkdir -p "${APPDIR}/usr/bin"
-mkdir -p "${APPDIR}/usr/share/applications"
-mkdir -p "${APPDIR}/usr/share/icons/hicolor/256x256/apps"
+# 2) Confere saída real
+if [ ! -f "dist/${APP}/${APP}" ]; then
+  echo "ERRO: não achei dist/${APP}/${APP}. Verifique o PyInstaller."
+  ls -lah "dist/${APP}" || true
+  exit 1
+fi
 
-# 2) copia BIN + _internal (essencial!)
-cp -a "${DIST_DIR}/${APP}" "${APPDIR}/usr/bin/${APP}"
-cp -a "${DIST_DIR}/_internal" "${APPDIR}/usr/bin/_internal"
+# 2.1) Garantia extra: libpython dentro do _internal (a prova de outra máquina)
+if [ -d "dist/${APP}/_internal" ]; then
+  if ! ls "dist/${APP}/_internal"/libpython*.so* >/dev/null 2>&1; then
+    echo "AVISO: libpython não encontrada em dist/${APP}/_internal. Tentando copiar do Python do ambiente..."
+    LIBPY="$(python - <<'PY'
+import sysconfig, os, glob
+libdir = sysconfig.get_config_var("LIBDIR") or ""
+ldlib  = sysconfig.get_config_var("LDLIBRARY") or ""
+cands = []
+if libdir and ldlib:
+    cands.append(os.path.join(libdir, ldlib))
+# tenta variações comuns
+cands += glob.glob(os.path.join(libdir, "libpython*.so*"))
+# filtra existentes e imprime o primeiro
+for p in cands:
+    if p and os.path.exists(p):
+        print(p)
+        break
+PY
+)"
+    if [ -n "${LIBPY:-}" ] && [ -f "${LIBPY}" ]; then
+      cp -av "${LIBPY}" "dist/${APP}/_internal/"
+      echo "OK: copiei ${LIBPY} para dist/${APP}/_internal/"
+    else
+      echo "AVISO: não consegui localizar libpython automaticamente. (Pode não ser necessário no seu caso.)"
+    fi
+  fi
+fi
 
-# 3) ícone (ajuste se quiser outro)
-ICON_SRC="assets/logo_256.png"
-test -f "${ICON_SRC}" || ICON_SRC="$(ls -1 assets/*.png | head -n 1)"
-cp -a "${ICON_SRC}" "${APPDIR}/usr/share/icons/hicolor/256x256/apps/leitorcodigos.png"
+# 3) Monta AppDir
+rm -rf "$APPDIR"
+mkdir -p "$APPDIR/usr/bin"
 
-# 4) desktop file (sem sudo, sempre dentro do AppDir)
-cat > "${APPDIR}/usr/share/applications/LeitorCodigos.desktop" <<'EOF'
+# Copia o executável E o _internal (sem isso quebra PIL/libpython etc.)
+cp -a "dist/${APP}/${APP}" "$APPDIR/usr/bin/${APP}"
+if [ -d "dist/${APP}/_internal" ]; then
+  cp -a "dist/${APP}/_internal" "$APPDIR/usr/bin/_internal"
+fi
+
+# 4) Desktop file
+mkdir -p "$APPDIR/usr/share/applications"
+cat > "$APPDIR/usr/share/applications/${APP}.desktop" <<EOF
 [Desktop Entry]
 Type=Application
-Name=LeitorCodigos
-Exec=LeitorCodigos
+Name=${APP}
+Exec=${APP}
 Icon=leitorcodigos
 Categories=Utility;
 Terminal=false
 EOF
 
-# 5) ferramentas (ou usa as do repo; se não existir, baixa)
-mkdir -p tools
+# 5) Ícone
+mkdir -p "$APPDIR/usr/share/icons/hicolor/256x256/apps"
+cp -f "assets/logo_256.png" "$APPDIR/usr/share/icons/hicolor/256x256/apps/leitorcodigos.png"
 
-if [[ ! -f tools/linuxdeploy-x86_64.AppImage ]]; then
-  curl -L -o tools/linuxdeploy-x86_64.AppImage \
-    https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
-fi
+# 6) AppImage
+chmod +x tools/*.AppImage || true
 
-if [[ ! -f tools/appimagetool-x86_64.AppImage ]]; then
-  curl -L -o tools/appimagetool-x86_64.AppImage \
-    https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
-fi
-
-chmod +x tools/linuxdeploy-x86_64.AppImage tools/appimagetool-x86_64.AppImage
-
-# 6) gera AppImage
 ./tools/linuxdeploy-x86_64.AppImage \
-  --appdir "${APPDIR}" \
-  --desktop-file "${APPDIR}/usr/share/applications/LeitorCodigos.desktop" \
-  --icon-file "${APPDIR}/usr/share/icons/hicolor/256x256/apps/leitorcodigos.png"
+  --appdir "$APPDIR" \
+  --desktop-file "$APPDIR/usr/share/applications/${APP}.desktop" \
+  --icon-file "$APPDIR/usr/share/icons/hicolor/256x256/apps/leitorcodigos.png"
 
-./tools/appimagetool-x86_64.AppImage "${APPDIR}" "${APP}-x86_64.AppImage"
-
+./tools/appimagetool-x86_64.AppImage "$APPDIR" "${APP}-x86_64.AppImage"
 echo "OK: gerado ${APP}-x86_64.AppImage"

@@ -15,3 +15,16 @@ __pycache__/
 # venv
 .venv/
 venv/
+
+# Build artifacts
+/AppDir/
+/dist/
+/build/
+**/__pycache__/
+*.pyc
+
+
+# DB real (com dados)
+/equipamentos.db
+
+printf "\n# DB real (com dados)\n/equipamentos.db\n" >> .gitignore

@@ -13,6 +13,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          clean: true
 
       - name: Setup Python 3.11
         uses: actions/setup-python@v5
@@ -45,7 +48,7 @@ jobs:
           APPIMAGE_EXTRACT_AND_RUN: "1"
         run: |
           set -e
-          chmod +x build_appimage.sh || true
+          chmod +x build_appimage.sh
           chmod +x tools/*.AppImage || true
 
           if [ ! -f build_appimage.sh ]; then
@@ -70,11 +73,11 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - name: Checkout (Windows-safe)
+      - name: Checkout
         uses: actions/checkout@v4
         with:
-          # evita falha por paths "inválidos no Windows" (ex: trailing space)
-          path: false
+          fetch-depth: 1
+          clean: true
 
       - name: Setup Python 3.11
         uses: actions/setup-python@v5
@@ -97,25 +100,22 @@ jobs:
         run: |
           $ErrorActionPreference = "Stop"
 
-          # 1) Executa scripts se existirem
-          if (Test-Path ".\build_windows.ps1") {
-            Write-Host "Rodando build_windows.ps1..."
-            powershell -ExecutionPolicy Bypass -File .\build_windows.ps1
+          # scripts do Windows ficam aqui no seu repo
+          $winDir = ".\registro_equipamentos_windows"
+
+          if (Test-Path "$winDir\build_windows.ps1") {
+            powershell -ExecutionPolicy Bypass -File "$winDir\build_windows.ps1"
           } else {
-            Write-Host "AVISO: build_windows.ps1 não encontrado."
+            Write-Host "AVISO: build_windows.ps1 não encontrado em $winDir (pulando)."
           }
 
-          if (Test-Path ".\build_installer_windows.ps1") {
-            Write-Host "Rodando build_installer_windows.ps1..."
-            powershell -ExecutionPolicy Bypass -File .\build_installer_windows.ps1
-          } elseif (Test-Path ".\build_installe_windows.ps1") {
-            Write-Host "Rodando build_installe_windows.ps1 (fallback nome)..."
-            powershell -ExecutionPolicy Bypass -File .\build_installe_windows.ps1
+          if (Test-Path "$winDir\build_installer_windows.ps1") {
+            powershell -ExecutionPolicy Bypass -File "$winDir\build_installer_windows.ps1"
           } else {
-            Write-Host "AVISO: script de installer não encontrado."
+            Write-Host "AVISO: build_installer_windows.ps1 não encontrado em $winDir (pulando installer)."
           }
 
-          # 2) Se nada foi gerado, faz fallback build com PyInstaller .spec
+          # fallback: se não gerou nada, tenta o spec (se existir)
           $hasDist = Test-Path ".\dist"
           $hasInstaller = Test-Path ".\dist_installer"
           $hasAnyExe = @(Get-ChildItem -Path . -Recurse -Filter *.exe -ErrorAction SilentlyContinue).Count -gt 0
@@ -124,7 +124,7 @@ jobs:
           if (-not $hasDist -and -not $hasInstaller -and -not $hasAnyExe -and -not $hasAnyMsi) {
             if (Test-Path ".\LeitorCodigos.spec") {
               Write-Host "Nenhuma saída detectada. Rodando fallback: PyInstaller LeitorCodigos.spec"
-              python -m PyInstaller --noconfirm LeitorCodigos.spec
+              python -m PyInstaller --noconfirm .\LeitorCodigos.spec
             } else {
               throw "Nenhuma saída gerada e LeitorCodigos.spec não encontrado."
             }
@@ -166,5 +166,3 @@ jobs:
             *.exe
             *.msi
             *.zip
-
-
