@@ -4,18 +4,19 @@ $ErrorActionPreference = "Stop"
 
 # ir para a raiz do repo (funciona no GitHub Actions e local)
 Set-Location (Resolve-Path (Join-Path $PSScriptRoot ".."))
+Write-Host "RepoRoot: $((Get-Location).Path)" -ForegroundColor DarkGray
 
-# pip
+# pip (sempre do python atual)
 python -m pip install --upgrade pip
 
 # deps (se existir requirements.txt)
 if (Test-Path ".\requirements.txt") {
-  pip install -r .\requirements.txt
+  python -m pip install -r .\requirements.txt
 } else {
   Write-Host "requirements.txt não existe, pulando..." -ForegroundColor Yellow
 }
 
-pip install pyinstaller
+python -m pip install pyinstaller pillow
 
 # valida template db no /data
 if (-not (Test-Path ".\data\equipamentos_template.db")) {
@@ -36,5 +37,12 @@ python -m PyInstaller --noconfirm .\LeitorCodigos.spec
 
 Write-Host ">>> BUILD CONCLUÍDO!" -ForegroundColor Green
 Write-Host "Pasta final: dist\LeitorCodigos" -ForegroundColor Green
+
+# DEBUG ÚTIL (primeiros itens do dist)
+if (Test-Path ".\dist\LeitorCodigos") {
+  Write-Host "Primeiros itens em dist\LeitorCodigos:" -ForegroundColor Cyan
+  Get-ChildItem .\dist\LeitorCodigos -Recurse | Select-Object -First 20 FullName
+}
+
 
 

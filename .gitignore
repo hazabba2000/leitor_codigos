@@ -26,5 +26,7 @@ venv/
 
 # DB real (com dados)
 /equipamentos.db
+**/equipamentos.db
+!data/equipamentos_template.db
 
 printf "\n# DB real (com dados)\n/equipamentos.db\n" >> .gitignore

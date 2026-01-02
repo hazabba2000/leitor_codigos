@@ -97,8 +97,19 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
-          powershell -ExecutionPolicy Bypass -File .\registro_equipamentos_windows\build_windows.ps1
-          powershell -ExecutionPolicy Bypass -File .\registro_equipamentos_windows\build_installer_windows.ps1
+          $winDir = ".\registro_equipamentos_windows"
+
+          if (Test-Path "$winDir\build_windows.ps1") {
+            powershell -ExecutionPolicy Bypass -File "$winDir\build_windows.ps1"
+          } else {
+            throw "build_windows.ps1 não encontrado em $winDir"
+          }
+
+          if (Test-Path "$winDir\build_installer_windows.ps1") {
+            powershell -ExecutionPolicy Bypass -File "$winDir\build_installer_windows.ps1"
+          } else {
+            Write-Host "AVISO: build_installer_windows.ps1 não encontrado (pulando installer)."
+          }
 
       - name: Debug dist tree (first 20)
         if: ${{ always() }}
