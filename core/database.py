@@ -50,8 +50,9 @@ def _garantir_banco_no_usuario():
     if destino.exists():
         return
 
-    origem = _resource_path("equipamentos.db")
+    origem = _resource_path("equipamentos_template.db")  # <- 2) aponta para o template empacotado
     # Se você empacotar sem o arquivo, ainda funciona criando do zero (só tabelas + seeds)
+    return _user_data_dir() / "equipamentos.db"          # <- 3) mantém o DB real no local gravável
     if origem.exists():
         try:
             shutil.copy2(origem, destino)
