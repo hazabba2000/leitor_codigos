@@ -95,10 +95,14 @@ jobs:
           }
           pip install pyinstaller
 
-      - name: Build Windows (scripts + fallback)
+      - name: Build Windows (scripts)
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
+
+          powershell -ExecutionPolicy Bypass -File .\registro_equipamentos_windows\build_windows.ps1
+          powershell -ExecutionPolicy Bypass -File .\registro_equipamentos_windows\build_installer_windows.ps1
+
 
           # scripts do Windows ficam aqui no seu repo
           $winDir = ".\registro_equipamentos_windows"
@@ -127,6 +131,20 @@ jobs:
               python -m PyInstaller --noconfirm .\LeitorCodigos.spec
             } else {
               throw "Nenhuma saída gerada e LeitorCodigos.spec não encontrado."
+            }
+          }
+      - name: Debug dist tree (first 20)
+        shell: pwsh
+        run: |
+          Write-Host "=== dist\LeitorCodigos (first 20) ==="
+          if (Test-Path ".\dist\LeitorCodigos") {
+            Get-ChildItem ".\dist\LeitorCodigos" -Recurse |
+              Select-Object -First 20 FullName
+          } else {
+            Write-Host "dist\LeitorCodigos não existe."
+            if (Test-Path ".\dist") {
+              Write-Host "=== dist root ==="
+              Get-ChildItem ".\dist" | Select-Object FullName
             }
           }
 
