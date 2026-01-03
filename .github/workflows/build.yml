@@ -218,29 +218,22 @@ jobs:
 
       - name: Remove empty files
         run: |
-          find release_files -type f -size 0 -delete
+          find release_files -type f -size 0 -delete || true
 
-      - name: Create Release + Upload (overwrite)
+      - name: Create Release (if missing) + Upload (overwrite)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -e
-
           TAG="${GITHUB_REF_NAME}"
 
-          # garante que existe release (se já existir, segue)
           gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --generate-notes
 
-          # remove arquivos vazios (segurança)
-          find release_files -type f -size 0 -delete || true
-
-          # faz upload substituindo se já existir
           gh release upload "$TAG" \
             release_files/**/LeitorCodigos.AppImage \
             release_files/**/LeitorCodigos.exe \
             release_files/**/LeitorCodigos_Setup.exe \
             --clobber
-
 
 
    
