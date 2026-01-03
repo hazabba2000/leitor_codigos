@@ -162,18 +162,45 @@ jobs:
           $ErrorActionPreference = "Stop"
           New-Item -ItemType Directory -Force -Path release | Out-Null
 
+          # 1) EXE (para referência)
           if (Test-Path ".\dist\LeitorCodigos\LeitorCodigos.exe") {
             Copy-Item ".\dist\LeitorCodigos\LeitorCodigos.exe" ".\release\LeitorCodigos.exe" -Force
           } else {
             throw "ERRO: Não encontrei dist\LeitorCodigos\LeitorCodigos.exe"
           }
 
+          # 2) PORTABLE ZIP (com a pasta inteira)
+          if (!(Test-Path ".\dist\LeitorCodigos")) {
+            throw "ERRO: Não encontrei dist\LeitorCodigos para gerar Portable.zip"
+          }
+
+          if (Test-Path ".\release\LeitorCodigos_Portable.zip") {
+            Remove-Item ".\release\LeitorCodigos_Portable.zip" -Force
+          }
+
+          Compress-Archive -Path ".\dist\LeitorCodigos\*" -DestinationPath ".\release\LeitorCodigos_Portable.zip" -Force
+
+          # Confirma que o ZIP existe e tem tamanho > 0
+          if (!(Test-Path ".\release\LeitorCodigos_Portable.zip")) {
+            throw "ERRO: ZIP não foi criado."
+          }
+          $size = (Get-Item ".\release\LeitorCodigos_Portable.zip").Length
+          if ($size -lt 1024) {
+            throw "ERRO: ZIP criado está vazio/pequeno demais ($size bytes)."
+          }
+
+          # 3) SETUP (se existir)
           if (Test-Path ".\dist_installer") {
             $setup = Get-ChildItem ".\dist_installer" -Filter "*.exe" -File | Sort-Object LastWriteTime -Descending | Select-Object -First 1
             if ($null -ne $setup) {
               Copy-Item $setup.FullName ".\release\LeitorCodigos_Setup.exe" -Force
+            } else {
+              Write-Host "AVISO: Installer não encontrado em dist_installer."
             }
+          } else {
+            Write-Host "AVISO: dist_installer não existe."
           }
+
       - name: Create Portable ZIP (Windows)
         shell: pwsh
         run: |
@@ -242,11 +269,10 @@ jobs:
           gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --generate-notes
 
           gh release upload "$TAG" \
-            release_files/**/LeitorCodigos.AppImage
-            release_files/**/LeitorCodigos_Portable.zip
-            release_files/**/LeitorCodigos_Setup.exe
-
-            --clobber
+          release_files/**/LeitorCodigos.AppImage \
+          release_files/**/LeitorCodigos_Portable.zip \
+          release_files/**/LeitorCodigos_Setup.exe \
+          --clobber
 
 
    
