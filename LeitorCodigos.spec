@@ -10,7 +10,7 @@ datas = [
 ]
 
 binaries = []
-hiddenimports = ["PIL._tkinter_finder", "PIL.ImageTk"]
+hiddenimports = ['passlib', 'passlib.handlers.pbkdf2', "PIL._tkinter_finder", "PIL.ImageTk"]
 
 tmp_ret = collect_all("PIL")
 datas += tmp_ret[0]
