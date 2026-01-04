@@ -2,6 +2,9 @@
 import customtkinter as ctk
 from core.config_service import ConfigService
 from gui.tela_login import LoginWindow  # ajuste se o nome for diferente
+from core.bootstrap_admin import bootstrap_default_admin
+
+bootstrap_default_admin()
 
 
 def main():
