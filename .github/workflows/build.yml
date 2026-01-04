@@ -109,8 +109,9 @@ jobs:
         run: |
           $ErrorActionPreference = "Stop"
           python -m pip install --upgrade pip
-          if (Test-Path "requirements.txt") { pip install -r requirements.txt }
-          pip install pyinstaller pillow customtkinter
+          pip install -r requirements.txt
+          pip install pyinstaller
+
 
 
       - name: Build Windows (scripts)
