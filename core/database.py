@@ -209,11 +209,28 @@ def inicializar_banco():
     except sqlite3.OperationalError:
         pass
 
-    # Usuário padrão: admin / admin (perfil ADMIN)
+    # ✅ SUBSTITUA ESTE TRECHO NO FINAL do core/database.py
+# (substitua TUDO desde "# Usuário padrão: admin / admin..." até o final dos UPDATEs do admin)
+
+    # --- PRIMEIRA EXECUÇÃO: garante admin/admin UMA VEZ (mesmo se o template vier diferente) ---
     cursor.execute("""
-        INSERT OR IGNORE INTO usuarios (id, nome, username, senha, perfil)
-        VALUES (1, 'Administrador', 'admin', 'admin', 'ADMIN');
+        SELECT 1 FROM configuracoes
+         WHERE chave = 'bootstrap_admin_v1'
+         LIMIT 1;
     """)
+    ja_rodou = cursor.fetchone()
+
+    if not ja_rodou:
+        # cria/força o admin com senha admin (apenas na primeira execução)
+        cursor.execute("""
+            INSERT OR REPLACE INTO usuarios (id, nome, username, senha, perfil)
+            VALUES (1, 'Administrador', 'admin', 'admin', 'ADMIN');
+        """)
+
+        cursor.execute("""
+            INSERT OR REPLACE INTO configuracoes (chave, valor)
+            VALUES ('bootstrap_admin_v1', '1');
+        """)
 
     # Garante que o admin SEMPRE tenha perfil ADMIN
     cursor.execute("""
@@ -228,6 +245,3 @@ def inicializar_banco():
            SET perfil = 'OPERADOR'
          WHERE username <> 'admin' AND (perfil IS NULL OR perfil = '');
     """)
-
-    conn.commit()
-    conn.close()
