@@ -8,7 +8,8 @@ import shutil
 import sqlite3
 
 
-APP_NAME = "leitor_codigos"
+APP_NAME = "leitor_codigos"       # Linux
+APP_NAME_WIN = "LeitorCodigos"    # Windows (pasta em AppData)
 
 
 def _resource_path(rel: str) -> Path:
@@ -27,8 +28,15 @@ def _resource_path(rel: str) -> Path:
 def _user_data_dir() -> Path:
     """
     Pasta gravável do usuário.
-    Preferência: XDG_DATA_HOME; senão ~/.local/share
+    - Windows: %LOCALAPPDATA%\LeitorCodigos
+    - Linux: XDG_DATA_HOME ou ~/.local/share/leitor_codigos
     """
+    if os.name == "nt":
+        base = Path(os.environ.get("LOCALAPPDATA", str(Path.home())))
+        p = base / APP_NAME_WIN
+        p.mkdir(parents=True, exist_ok=True)
+        return p
+
     xdg = os.environ.get("XDG_DATA_HOME")
     base = Path(xdg) if xdg else (Path.home() / ".local" / "share")
     p = base / APP_NAME
@@ -50,15 +58,20 @@ def _garantir_banco_no_usuario():
     if destino.exists():
         return
 
-    origem = _resource_path("equipamentos_template.db")  # <- 2) aponta para o template empacotado
-    # Se você empacotar sem o arquivo, ainda funciona criando do zero (só tabelas + seeds)
-    return _user_data_dir() / "equipamentos.db"          # <- 3) mantém o DB real no local gravável
+    origem = _resource_path("equipamentos_template.db")  # template empacotado
     if origem.exists():
         try:
             shutil.copy2(origem, destino)
+            return
         except Exception:
-            # fallback: cria vazio (será inicializado com tabelas/seeds depois)
             pass
+
+    # fallback: cria vazio (será inicializado com tabelas/seeds depois)
+    try:
+        destino.parent.mkdir(parents=True, exist_ok=True)
+        destino.touch(exist_ok=True)
+    except Exception:
+        pass
 
 
 def criar_conexao() -> sqlite3.Connection:
@@ -196,7 +209,6 @@ def inicializar_banco():
     except sqlite3.OperationalError:
         pass
 
-
     # Usuário padrão: admin / admin (perfil ADMIN)
     cursor.execute("""
         INSERT OR IGNORE INTO usuarios (id, nome, username, senha, perfil)
@@ -219,6 +231,3 @@ def inicializar_banco():
 
     conn.commit()
     conn.close()
-
-
-
