@@ -76,7 +76,8 @@ def _garantir_banco_no_usuario():
 
 def criar_conexao() -> sqlite3.Connection:
     _garantir_banco_no_usuario()
-    conn = sqlite3.connect(_db_path())
+    conn = sqlite3.connect(_db_path(), timeout=30)
+    conn.execute("PRAGMA busy_timeout = 30000;")
     conn.execute("PRAGMA foreign_keys = ON;")
     return conn
 
