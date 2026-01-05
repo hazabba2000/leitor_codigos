@@ -2,7 +2,8 @@
 from __future__ import annotations
 
 import sqlite3
-from .database import criar_conexao
+from database import criar_conexao
+
 
 
 
