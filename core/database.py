@@ -85,8 +85,7 @@ def criar_conexao() -> sqlite3.Connection:
 def inicializar_banco():
     """Cria as tabelas necessárias e carrega dados padrões (apenas na primeira vez)."""
     conn = criar_conexao()
-    try:
-        cursor = conn.cursor()
+    cursor = conn.cursor()
 
     # Tabela principal de registros
     cursor.execute("""
@@ -111,7 +110,7 @@ def inicializar_banco():
         );
     """)
 
-    # Tabela de modelos (com caminho da imagem)
+    # Tabela de modelos
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS modelos_equipamento (
             id             INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -122,7 +121,7 @@ def inicializar_banco():
         );
     """)
 
-    # Tabela de usuários (login) – já com coluna perfil
+    # Tabela de usuários
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS usuarios (
             id       INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -133,7 +132,7 @@ def inicializar_banco():
         );
     """)
 
-    # Tabela de configurações gerais
+    # Configurações
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS configuracoes (
             chave TEXT PRIMARY KEY,
@@ -141,7 +140,7 @@ def inicializar_banco():
         );
     """)
 
-    # Tabela de logs / auditoria
+    # Auditoria
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS logs_auditoria (
             id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -154,67 +153,18 @@ def inicializar_banco():
         );
     """)
 
-    # --- MIGRAÇÃO: garante que a coluna 'perfil' exista em bancos antigos ---
+    # Migração perfil
     cursor.execute("PRAGMA table_info(usuarios);")
     colunas = [row[1] for row in cursor.fetchall()]
     if "perfil" not in colunas:
         try:
-            cursor.execute("ALTER TABLE usuarios ADD COLUMN perfil TEXT DEFAULT 'OPERADOR';")
+            cursor.execute(
+                "ALTER TABLE usuarios ADD COLUMN perfil TEXT DEFAULT 'OPERADOR';"
+            )
         except sqlite3.OperationalError:
             pass
 
-    # --------- DADOS PADRÃO (APENAS SE A TABELA ESTIVER VAZIA) ---------
-
-    # Tipos de equipamento
-    tipos_padrao = ["SMART POS", "GPRS-WIFI", "BLUETOOTH-GPRS"]
-
-    cursor.execute("SELECT COUNT(*) FROM tipos_equipamento;")
-    qtd_tipos = cursor.fetchone()[0]
-
-    if qtd_tipos == 0:
-        cursor.executemany(
-            "INSERT INTO tipos_equipamento (nome) VALUES (?);",
-            [(nome,) for nome in tipos_padrao]
-        )
-
-    # Atualiza o mapa de tipos (já com o que estiver no banco)
-    cursor.execute("SELECT id, nome FROM tipos_equipamento;")
-    tipos = {nome: _id for _id, nome in cursor.fetchall()}
-
-    # Modelos de equipamento
-    modelos_padrao = [
-        ("P2-A11",   "SMART POS",      "equipamentos/P2A11.png"),
-        ("D-188",    "BLUETOOTH-GPRS", "equipamentos/D188.png"),
-        ("D230",     "GPRS-WIFI",      "equipamentos/D230.png"),
-        ("MP35P-ST", "GPRS-WIFI",      "equipamentos/MP35P-ST.png"),
-    ]
-
-    cursor.execute("SELECT COUNT(*) FROM modelos_equipamento;")
-    qtd_modelos = cursor.fetchone()[0]
-
-    if qtd_modelos == 0:
-        for nome_modelo, nome_tipo, caminho in modelos_padrao:
-            tipo_id = tipos.get(nome_tipo) if nome_tipo else None
-            cursor.execute("""
-                INSERT INTO modelos_equipamento
-                    (nome, tipo_id, caminho_imagem)
-                VALUES (?, ?, ?);
-            """, (nome_modelo, tipo_id, caminho))
-
-    # --- MIGRAÇÃO: normaliza caminhos antigos "assets/equipamentos/..." -> "equipamentos/..."
-    try:
-        cursor.execute("""
-            UPDATE modelos_equipamento
-            SET caminho_imagem = REPLACE(caminho_imagem, 'assets/equipamentos/', 'equipamentos/')
-            WHERE caminho_imagem LIKE 'assets/equipamentos/%';
-        """)
-    except sqlite3.OperationalError:
-        pass
-
-    # ✅ SUBSTITUA ESTE TRECHO NO FINAL do core/database.py
-# (substitua TUDO desde "# Usuário padrão: admin / admin..." até o final dos UPDATEs do admin)
-
-    # --- PRIMEIRA EXECUÇÃO: garante admin/admin UMA VEZ (mesmo se o template vier diferente) ---
+    # Bootstrap admin (UMA VEZ)
     cursor.execute("""
         SELECT 1 FROM configuracoes
          WHERE chave = 'bootstrap_admin_v1'
@@ -223,31 +173,26 @@ def inicializar_banco():
     ja_rodou = cursor.fetchone()
 
     if not ja_rodou:
-        # cria/força o admin com senha admin (apenas na primeira execução)
         cursor.execute("""
             INSERT OR REPLACE INTO usuarios (id, nome, username, senha, perfil)
             VALUES (1, 'Administrador', 'admin', 'admin', 'ADMIN');
         """)
-
         cursor.execute("""
             INSERT OR REPLACE INTO configuracoes (chave, valor)
             VALUES ('bootstrap_admin_v1', '1');
         """)
 
-    # Garante que o admin SEMPRE tenha perfil ADMIN
     cursor.execute("""
         UPDATE usuarios
            SET perfil = 'ADMIN'
          WHERE username = 'admin';
     """)
 
-    # Demais usuários sem perfil viram OPERADOR
     cursor.execute("""
         UPDATE usuarios
            SET perfil = 'OPERADOR'
          WHERE username <> 'admin' AND (perfil IS NULL OR perfil = '');
-
     """)
+
     conn.commit()
-finally:
-    conn.close()    
+    conn.close()
