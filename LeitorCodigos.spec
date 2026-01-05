@@ -6,7 +6,8 @@ from PyInstaller.utils.hooks import collect_all
 # roda a partir da raiz do repo (cwd no CI)
 datas = [
     ("assets", "assets"),
-    ("data/equipamentos_template.db", "."),  # <- 1) pega do /data e coloca no ROOT do bundle
+    ("data/equipamentos_template.db", "."),
+    ("core/database.py", "."),   # <- COPIA database.py PARA A RAIZ DO BUNDLE
 ]
 
 binaries = []
