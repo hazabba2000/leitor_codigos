@@ -85,7 +85,8 @@ def criar_conexao() -> sqlite3.Connection:
 def inicializar_banco():
     """Cria as tabelas necessárias e carrega dados padrões (apenas na primeira vez)."""
     conn = criar_conexao()
-    cursor = conn.cursor()
+    try:
+        cursor = conn.cursor()
 
     # Tabela principal de registros
     cursor.execute("""
@@ -245,4 +246,8 @@ def inicializar_banco():
         UPDATE usuarios
            SET perfil = 'OPERADOR'
          WHERE username <> 'admin' AND (perfil IS NULL OR perfil = '');
+
     """)
+    conn.commit()
+finally:
+    conn.close()    
