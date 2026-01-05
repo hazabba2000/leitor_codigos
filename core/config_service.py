@@ -1,69 +1,35 @@
 # core/config_service.py
-from typing import Optional
-import os
+from __future__ import annotations
 
-from .database import criar_conexao, inicializar_banco
+import sqlite3
+from .database import criar_conexao
+
 
 
 class ConfigService:
-    """Serviço para guardar e recuperar configurações gerais do sistema."""
-
     def __init__(self):
-        # garante que tabelas existam
-        inicializar_banco()
+        pass
 
-    def _get_valor(self, chave: str) -> Optional[str]:
+    def _garantir_tabela(self, cur: sqlite3.Cursor):
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS configuracoes (
+                chave TEXT PRIMARY KEY,
+                valor TEXT
+            );
+        """)
+
+    def _get_valor(self, chave: str) -> str | None:
         conn = criar_conexao()
-        cursor = conn.cursor()
-        cursor.execute(
-            "SELECT valor FROM configuracoes WHERE chave = ?;",
-            (chave,)
-        )
-        row = cursor.fetchone()
+        cur = conn.cursor()
+        self._garantir_tabela(cur)
+        cur.execute("SELECT valor FROM configuracoes WHERE chave=? LIMIT 1;", (chave,))
+        row = cur.fetchone()
         conn.close()
         return row[0] if row else None
 
-    def _set_valor(self, chave: str, valor: str) -> None:
-        conn = criar_conexao()
-        cursor = conn.cursor()
-        cursor.execute("""
-            INSERT INTO configuracoes (chave, valor)
-            VALUES (?, ?)
-            ON CONFLICT(chave) DO UPDATE SET valor = excluded.valor;
-        """, (chave, valor))
-        conn.commit()
-        conn.close()
-
-    # ---------- Tema (claro/escuro) ----------
-
-    def detectar_tema_sistema(self) -> str:
-        """
-        Tentativa simples de detectar tema do sistema.
-        Se encontrar 'dark' em GTK_THEME, usa 'dark'. Caso contrário, 'light'.
-        """
-        gtk_theme = os.getenv("GTK_THEME", "").lower()
-        if "dark" in gtk_theme:
-            return "dark"
-        # fallback: claro
-        return "light"
-
     def obter_tema_preferido(self) -> str:
-        """
-        Retorna 'dark' ou 'light'.
-        Se não houver nada salvo, detecta do sistema e salva.
-        """
-        valor = self._get_valor("tema")
-        if valor in ("dark", "light"):
-            return valor
+        # ✅ Não grava nada no banco no start (evita lock)
+        tema = self._get_valor("tema")
+        return tema if tema else "system"
 
-        tema = self.detectar_tema_sistema()
-        self._set_valor("tema", tema)
-        return tema
 
-    def salvar_tema(self, tema: str) -> None:
-        """
-        Salva 'dark' ou 'light' como tema preferido.
-        """
-        if tema not in ("dark", "light"):
-            return
-        self._set_valor("tema", tema)
