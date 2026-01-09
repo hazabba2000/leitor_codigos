@@ -175,8 +175,15 @@ def inicializar_banco():
     if not ja_rodou:
         cursor.execute("""
             INSERT OR REPLACE INTO usuarios (id, nome, username, senha, perfil)
-            VALUES (1, 'Administrador', 'admin', 'admin', 'ADMIN');
+            VALUES (
+                1,
+                'Administrador',
+                'admin',
+                '$pbkdf2-sha256$29000$yXlv9TnHOec8J1EJ8f8v9A$Q3XqQxZ7Gx2lM5M8H5Qe8Y8s8GmUuY1zvKJw0E3Z8l0',
+                'ADMIN'
+            );
         """)
+
         cursor.execute("""
             INSERT OR REPLACE INTO configuracoes (chave, valor)
             VALUES ('bootstrap_admin_v1', '1');
