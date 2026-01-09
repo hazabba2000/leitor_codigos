@@ -179,7 +179,7 @@ def inicializar_banco():
                 1,
                 'Administrador',
                 'admin',
-                '$pbkdf2-sha256$29000$yXlv9TnHOec8J1EJ8f8v9A$Q3XqQxZ7Gx2lM5M8H5Qe8Y8s8GmUuY1zvKJw0E3Z8l0',
+                '$pbkdf2-sha256$29000$W6sVorS2ttY6p7TWGmOsFQ$vW1bLKo13KvmXNdfooX6gr6bkhPmMG3pLlPWQxHXwA0',
                 'ADMIN'
             );
         """)
